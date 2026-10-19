@@ -1,0 +1,23 @@
+{
+  "name": "daligotchi",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.14.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @daligotchi/server --filter @daligotchi/client dev",
+    "build": "pnpm --filter @daligotchi/client build && pnpm --filter @daligotchi/server build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "pnpm -r typecheck",
+    "db:init": "sh scripts/db-local.sh init",
+    "db:start": "sh scripts/db-local.sh start",
+    "db:stop": "sh scripts/db-local.sh stop",
+    "db:generate": "pnpm --filter @daligotchi/server db:generate",
+    "db:migrate": "pnpm --filter @daligotchi/server db:migrate"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

@@ -1,0 +1,98 @@
+:root {
+  --bg: #2b2340;
+  --panel: rgba(27, 21, 42, 0.85);
+  --text: #f6efe0;
+  --accent: #ff7a1a;
+  --ok: #7fb069;
+  --warn: #e0a030;
+  --error: #e05a5a;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  overflow: hidden;
+}
+
+#game {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#game canvas {
+  image-rendering: pixelated;
+}
+
+#ui {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: max(12px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+
+.top-bar,
+.bottom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.bottom-bar {
+  justify-content: center;
+}
+
+.top-bar h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  letter-spacing: 0.02em;
+}
+
+.status {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--panel);
+}
+
+.status--ok {
+  color: var(--ok);
+}
+.status--checking {
+  color: var(--warn);
+}
+.status--down {
+  color: var(--error);
+}
+
+.actions-button {
+  font: inherit;
+  font-weight: 700;
+  font-size: 1.1rem;
+  padding: 12px 32px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #1b152a;
+  box-shadow: 0 4px 0 #b4520c;
+}
+
+.actions-button:disabled {
+  opacity: 0.55;
+}

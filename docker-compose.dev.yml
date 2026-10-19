@@ -1,0 +1,18 @@
+# Alternative au Postgres local du projet (pnpm db:start) quand Docker est disponible :
+#   docker compose -f docker-compose.dev.yml up -d
+# Même port et mêmes identifiants que .env.example.
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: daligotchi
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: daligotchi_dev
+    ports:
+      - '127.0.0.1:5434:5432'
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+      - ./deploy/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+
+volumes:
+  pgdata_dev:
