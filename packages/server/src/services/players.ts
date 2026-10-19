@@ -4,11 +4,14 @@ import { z } from 'zod';
 import type { Database } from '../db/client.ts';
 import { households, players } from '../db/schema.ts';
 
+/**
+ * Pseudo : prénoms accentués acceptés. Il est normalisé (NFC, minuscules) pour que
+ * « Léon », « LÉON » et un « é » tapé en deux caractères désignent le même joueur.
+ */
 export const PseudoSchema = z
   .string()
-  .trim()
-  .toLowerCase()
-  .regex(/^[a-z0-9_-]{3,20}$/, '3 à 20 caractères : lettres sans accents, chiffres, - ou _');
+  .transform((value) => value.trim().normalize('NFC').toLocaleLowerCase('fr'))
+  .pipe(z.string().regex(/^[\p{L}\p{N}_-]{3,20}$/u, '3 à 20 caractères : lettres, chiffres, - ou _'));
 
 export const PasswordSchema = z.string().min(8, 'au moins 8 caractères').max(200);
 

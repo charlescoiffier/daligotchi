@@ -36,6 +36,13 @@ describe('connexion', () => {
     expect(cookie?.sameSite).toBe('Lax');
   });
 
+  it('accepte les prénoms accentués, quelle que soit la façon de taper l’accent', async () => {
+    await createPlayer(ctx.database, { pseudo: 'Léon', password: 'croissant-de-lune' }, 0);
+    expect((await login('LÉON', 'croissant-de-lune')).statusCode).toBe(200);
+    // « e » suivi de l'accent combinant, comme certains claviers le produisent
+    expect((await login('Le\u0301on', 'croissant-de-lune')).json()).toMatchObject({ player: { pseudo: 'léon' } });
+  });
+
   it('ignore les majuscules et les espaces autour du pseudo', async () => {
     await createPlayer(ctx.database, { pseudo: 'lune', password: 'croissant-de-lune' }, 0);
     expect((await login('  Lune ', 'croissant-de-lune')).statusCode).toBe(200);
