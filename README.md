@@ -1,6 +1,6 @@
 # Dalígotchi
 
-Jeu familial d'animaux de compagnie en pixel art. Le design est décrit dans `outputs/Daligotchi-GDD-v0.2.md` et l'architecture dans `outputs/Daligotchi-Plan-technique-PVJ-v0.1.md`.
+Jeu familial d'animaux de compagnie en pixel art. Le design est décrit dans `outputs/Daligotchi-GDD-v0.3.md` et l'architecture dans `outputs/Daligotchi-Plan-technique-PVJ-v0.1.md`.
 
 ## Organisation
 
