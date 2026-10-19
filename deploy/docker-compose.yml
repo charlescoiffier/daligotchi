@@ -1,0 +1,54 @@
+# Déploiement de daligotchi.charlescoiffier.fr (modèle vps-infra, adapté : application + base PostgreSQL).
+# Copié automatiquement sur le VPS dans ~/srv/daligotchi/ à chaque déploiement.
+# Les secrets sont dans ~/srv/daligotchi/.env sur le VPS (POSTGRES_PASSWORD, DATABASE_URL, WORLD_SPEED), jamais dans git.
+# Les migrations s'appliquent au démarrage du conteneur de l'application.
+services:
+  app:
+    image: ghcr.io/charlescoiffier/daligotchi:latest
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [web, internal]
+    # Garde-fous : une appli qui s'emballe ne doit pas faire tomber les autres sites (VPS : 1 cœur, 3,8 Go)
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 200
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=web
+      - traefik.http.routers.daligotchi.rule=Host(`daligotchi.charlescoiffier.fr`)
+      - traefik.http.routers.daligotchi.tls.certresolver=le
+      - traefik.http.services.daligotchi.loadbalancer.server.port=3000
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: daligotchi
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?définir POSTGRES_PASSWORD dans ~/srv/daligotchi/.env}
+      POSTGRES_DB: daligotchi
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U daligotchi -d daligotchi']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    # Réseau interne uniquement : la base n'est jamais exposée à Internet ni aux autres sites.
+    networks: [internal]
+    mem_limit: 256m
+    cpus: 0.5
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  dbdata:
+
+networks:
+  web:
+    external: true
+  internal:
