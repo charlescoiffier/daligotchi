@@ -4,6 +4,7 @@
  *   pnpm admin create-user <pseudo> [--password <mdp>]      crée un joueur et son foyer
  *   pnpm admin reset-password <pseudo> [--password <mdp>]   change le mot de passe
  *   pnpm admin list-users                                   liste les joueurs
+ *   pnpm admin add-starters <pseudo> [--count N]            donne N animaux de départ (2 à 4 au hasard par défaut)
  *   pnpm admin seed-test-accounts                           3 comptes de test (hors production)
  *
  * Sans --password, un mot de passe est généré et affiché une seule fois.
@@ -17,7 +18,7 @@ import { DAY, makeGenotype, WEEK, worldTimeAt } from '@daligotchi/core';
 import { z } from 'zod';
 import { loadConfig } from '../config.ts';
 import { createDb, type Database } from '../db/client.ts';
-import { addFounderAnimal } from '../services/households.ts';
+import { addFounderAnimal, addStarterAnimals } from '../services/households.ts';
 import { createPlayer, findPlayerByPseudo, listPlayers, setPassword } from '../services/players.ts';
 import { loadWorldClock } from '../services/world.ts';
 
@@ -70,6 +71,7 @@ async function main() {
     options: {
       password: { type: 'string' },
       'allow-weak-password': { type: 'boolean', default: false },
+      count: { type: 'string' },
     },
   });
   const [command, pseudo] = positionals;
@@ -106,6 +108,16 @@ async function main() {
         }
         break;
       }
+      case 'add-starters': {
+        if (!pseudo) throw new Error('Usage : add-starters <pseudo> [--count N]');
+        const player = await findPlayerByPseudo(database, pseudo);
+        if (!player) throw new Error(`Joueur « ${pseudo} » introuvable.`);
+        const count = values.count ? Number(values.count) : 2 + randomInt(3);
+        const added = await addStarterAnimals(database, player.id, count, worldNow);
+        for (const animal of added) console.log(`${player.pseudo} : ${animal.name} (${animal.form}, ${animal.stage})`);
+        if (added.length < count) console.log(`Foyer plein : ${added.length} animal(aux) ajouté(s) sur ${count}.`);
+        break;
+      }
       case 'seed-test-accounts': {
         if (config.NODE_ENV === 'production') throw new Error('Interdit en production.');
         await seedTestAccounts(
@@ -116,7 +128,7 @@ async function main() {
         break;
       }
       default:
-        throw new Error('Commandes : create-user, reset-password, list-users, seed-test-accounts');
+        throw new Error('Commandes : create-user, reset-password, list-users, add-starters, seed-test-accounts');
     }
   } finally {
     await database.sql.end();

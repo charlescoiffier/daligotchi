@@ -38,6 +38,8 @@ body {
 
 #game canvas {
   image-rendering: pixelated;
+  /* La page centre l'habitat ; on annule les marges que Phaser ajoute pour le centrer à son tour. */
+  margin: 0 !important;
 }
 
 #ui {

@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { eggs, players } from '../src/db/schema.ts';
 import { createGameEgg, restockAdoption } from '../src/services/adoption.ts';
-import { addFounderAnimal } from '../src/services/households.ts';
+import { addFounderAnimal, addStarterAnimals } from '../src/services/households.ts';
 import { createPlayer } from '../src/services/players.ts';
 import { createTestContext, loginAs, resetDb, type TestContext } from './helpers.ts';
 
@@ -206,5 +206,20 @@ describe('PATCH /api/animals/:id', () => {
     expect((await visit(cookie)).json().animals[0].name).toBe('Étincelle');
     expect((await rename(theirs.id, 'Volé')).statusCode).toBe(404);
     expect((await rename(mine.id, '   ')).statusCode).toBe(400);
+  });
+});
+
+describe('animaux de départ', () => {
+  it('donne des fondateurs jeunes ou adultes, sans dépasser les places libres', async () => {
+    const { player, cookie } = await loginAs(ctx);
+    const first = await addStarterAnimals(ctx.database, player.id, 4, ctx.app.worldNow(), seededRandom(5));
+    expect(first).toHaveLength(4);
+    for (const animal of first) {
+      expect(['renard', 'poulpe', 'poulpard']).toContain(animal.form);
+      expect(animal.stage).not.toBe('old');
+    }
+    const second = await addStarterAnimals(ctx.database, player.id, 4, ctx.app.worldNow(), seededRandom(6));
+    expect(second).toHaveLength(2);
+    expect((await visit(cookie)).json().slots).toEqual({ used: 6, total: 6 });
   });
 });

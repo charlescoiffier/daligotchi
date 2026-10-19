@@ -28,7 +28,8 @@ export function createGame(parent: HTMLElement): GameHandle {
     input: { windowEvents: false },
     scale: {
       mode: Phaser.Scale.NONE,
-      autoCenter: Phaser.Scale.CENTER_BOTH,
+      // Le centrage est fait par la page (CSS) : un second centrage par Phaser décalerait l'habitat.
+      autoCenter: Phaser.Scale.NO_CENTER,
       zoom: integerZoom(window.innerWidth, window.innerHeight),
     },
     scene: [HabitatScene],

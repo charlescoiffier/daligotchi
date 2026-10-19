@@ -7,6 +7,7 @@ import {
   applyEggCare,
   BALANCE,
   type CareAction,
+  DAY,
   defaultRandom,
   describeAnimal,
   describeEgg,
@@ -23,9 +24,11 @@ import {
   newbornAnimal,
   newbornName,
   type Random,
+  randomFounderGenotype,
   type Stage,
   stageOf,
   visibleForm,
+  WEEK,
 } from '@daligotchi/core';
 import { and, asc, eq, sql } from 'drizzle-orm';
 import type { Database } from '../db/client.ts';
@@ -244,3 +247,43 @@ export async function addFounderAnimal(
     .returning({ id: animals.id });
   return animal!;
 }
+
+/**
+ * Animaux de départ : donne à un joueur jusqu'à `count` fondateurs d'espèces et d'âges variés
+ * (jeunes ou adultes), sans jamais dépasser les places libres du foyer. Renvoie ceux qui ont été ajoutés.
+ */
+export async function addStarterAnimals(
+  { db }: Database,
+  playerId: string,
+  count: number,
+  worldNow: number,
+  random: Random = defaultRandom,
+): Promise<{ name: string; form: Form; stage: Stage }[]> {
+  return db.transaction(async (tx) => {
+    const household = await lockHousehold(tx, playerId);
+    const free = BALANCE.householdSlots - (await usedSlots(tx, household.id));
+    const added: { name: string; form: Form; stage: Stage }[] = [];
+    const { youngDuration, adultDuration } = BALANCE.lifeStages;
+    for (let i = 0; i < Math.min(count, free); i++) {
+      const genotype = randomFounderGenotype(BALANCE.activeSpecies, random);
+      // Entre 2 jours et la fin de l'âge adulte moins une semaine : jamais vieux au départ.
+      const minAge = 2 * DAY;
+      const ageMs = minAge + random() * (youngDuration + adultDuration - WEEK - minAge);
+      const name = newbornName(random);
+      const form = visibleForm(genotype);
+      await tx.insert(animals).values({
+        householdId: household.id,
+        name,
+        genotype,
+        form,
+        needs: FULL_NEEDS,
+        ageMs,
+        lifespanMs: lifespanOf(1),
+        at: worldNow,
+      });
+      added.push({ name, form, stage: stageOf(ageMs) });
+    }
+    return added;
+  });
+}
+
