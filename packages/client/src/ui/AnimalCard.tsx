@@ -1,9 +1,17 @@
-import { ANIMAL_NEEDS, type MessageKey } from '@daligotchi/core';
+import { ANIMAL_NEEDS, type AnimalAction, type MessageKey } from '@daligotchi/core';
 import type { HouseholdAnimal } from '../api/client.ts';
 import { t } from '../i18n/index.ts';
+import { ANIMAL_ACTIONS } from './ActionsPanel.tsx';
 
-/** Fiche d'un animal : uniquement des mots, jamais de nombres (GDD §5). */
-export function AnimalCard({ animal, onClose }: { animal: HouseholdAnimal; onClose: () => void }) {
+interface AnimalCardProps {
+  animal: HouseholdAnimal;
+  busy: boolean;
+  onAction: (action: AnimalAction) => void;
+  onClose: () => void;
+}
+
+/** Fiche d'un animal : uniquement des mots, jamais de nombres (GDD §5), et ses soins. */
+export function AnimalCard({ animal, busy, onAction, onClose }: AnimalCardProps) {
   const { description } = animal;
   return (
     <section class="card" aria-label={animal.name}>
@@ -29,6 +37,13 @@ export function AnimalCard({ animal, onClose }: { animal: HouseholdAnimal; onClo
           );
         })}
       </ul>
+      <div class="card__actions">
+        {ANIMAL_ACTIONS.map((action) => (
+          <button key={action} type="button" class="button button--action" disabled={busy} onClick={() => onAction(action)}>
+            {t(`action.${action}`)}
+          </button>
+        ))}
+      </div>
     </section>
   );
 }

@@ -1,14 +1,17 @@
 :root {
-  --bg: #2b2340;
-  --panel: rgba(27, 21, 42, 0.92);
-  --text: #f6efe0;
-  --muted: #b9b0c9;
+  /* Thème clair, assorti au décor gris léger sur fond blanc (GDD §13). */
+  --bg: #ffffff;
+  --panel: rgba(248, 248, 246, 0.96);
+  --panel-border: #e2e2de;
+  --chip: #efefec;
+  --text: #2f2f33;
+  --muted: #77777f;
   --accent: #ff7a1a;
-  --accent-shadow: #b4520c;
-  --good: #8fcf7a;
-  --low: #e8b04a;
-  --bad: #f07070;
-  color-scheme: dark;
+  --accent-shadow: #c45a10;
+  --good: #3f8f3a;
+  --low: #b9770e;
+  --bad: #c83a3a;
+  color-scheme: light;
 }
 
 * {
@@ -65,7 +68,7 @@ body {
   font-size: 1.1rem;
   padding: 12px 32px;
   background: var(--accent);
-  color: #1b152a;
+  color: #fff;
   box-shadow: 0 4px 0 var(--accent-shadow);
 }
 
@@ -74,8 +77,22 @@ body {
   white-space: nowrap;
   font-size: 0.8rem;
   padding: 6px 12px;
-  background: var(--panel);
+  background: var(--chip);
   color: var(--muted);
+}
+
+.button--action {
+  font-size: 0.95rem;
+  padding: 10px 14px;
+  background: #fff;
+  color: var(--text);
+  border: 2px solid var(--panel-border);
+  box-shadow: 0 3px 0 var(--panel-border);
+}
+
+.button--action:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--panel-border);
 }
 
 .button:disabled {
@@ -127,6 +144,7 @@ body {
   padding: 8px 14px;
   border-radius: 10px;
   background: var(--panel);
+  border: 1px solid var(--panel-border);
   color: var(--muted);
 }
 
@@ -138,6 +156,7 @@ body {
   padding: 24px;
   border-radius: 16px;
   background: var(--panel);
+  border: 1px solid var(--panel-border);
 }
 
 .login__title {
@@ -164,9 +183,9 @@ body {
   font: inherit;
   font-size: 1rem;
   padding: 10px 12px;
-  border: 2px solid #4a3f66;
+  border: 2px solid var(--panel-border);
   border-radius: 10px;
-  background: #1b152a;
+  background: #fff;
   color: var(--text);
 }
 
@@ -188,6 +207,8 @@ body {
   padding: 14px 16px;
   border-radius: 14px;
   background: var(--panel);
+  border: 1px solid var(--panel-border);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
 }
 
 .card__header {
@@ -238,7 +259,7 @@ body {
   font-size: 0.8rem;
   padding: 4px 10px;
   border-radius: 999px;
-  background: #1b152a;
+  background: var(--chip);
 }
 
 .need--good {
@@ -249,4 +270,79 @@ body {
 }
 .need--bad {
   color: var(--bad);
+}
+
+.card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Panneau Actions */
+
+.panel {
+  width: min(100%, 360px);
+  padding: 12px 16px 16px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.panel h2 {
+  margin: 12px 0 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel__header h2 {
+  margin-top: 0;
+}
+
+.panel__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Bandeau « Touche l'animal… » et messages */
+
+.hint,
+.toast {
+  width: min(100%, 360px);
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+.hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #fff4e8;
+  border: 1px solid #ffd2a8;
+}
+
+.toast {
+  text-align: center;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  animation: toast-in 180ms ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }

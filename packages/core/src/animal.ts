@@ -129,3 +129,34 @@ export function describeAnimal(animal: AnimalState, homeCleanliness: number): An
 export function describeHome(homeCleanliness: number): MessageKey {
   return `need.home.${needLevel(homeCleanliness)}`;
 }
+
+/** Toutes les actions de soin de la PVJ. */
+export type CareAction = HouseholdAction | AnimalAction;
+export const CARE_ACTIONS: readonly CareAction[] = ['feed', 'water', 'cleanHome', 'pet', 'ball', 'wash'];
+/** Actions qui demandent de choisir un animal. La balle peut aussi être lancée à tout le foyer. */
+export const ANIMAL_ONLY_ACTIONS: readonly AnimalAction[] = ['pet', 'wash'];
+
+/**
+ * Applique une action de soin au foyer. `animalIndex` désigne l'animal visé ;
+ * sans lui, la balle est lancée à tout le foyer.
+ */
+export function applyCare(
+  household: HouseholdState,
+  action: CareAction,
+  animalIndex?: number,
+): HouseholdState {
+  if (action === 'feed' || action === 'water' || action === 'cleanHome') {
+    return applyHouseholdAction(household, action);
+  }
+  if (animalIndex === undefined && action !== 'ball') {
+    throw new Error(`L'action ${action} demande un animal`);
+  }
+  return {
+    ...household,
+    animals: household.animals.map((animal, index) =>
+      animalIndex === undefined || index === animalIndex
+        ? { ...animal, needs: applyAnimalAction(animal.needs, action) }
+        : animal,
+    ),
+  };
+}

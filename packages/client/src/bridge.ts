@@ -2,8 +2,15 @@
  * Pont entre l'habitat (Phaser) et les menus (Preact) : chacun publie ou écoute
  * des événements sans dépendre de l'autre.
  */
+import type { CareAction } from '@daligotchi/core';
+
 interface BridgeEvents {
+  /** Un animal a été touché dans l'habitat. */
   'animal-selected': { id: string };
+  /** La fiche a été fermée : l'habitat retire le marqueur. */
+  'animal-deselected': Record<string, never>;
+  /** Un soin a été accepté par le serveur : l'habitat joue l'effet correspondant. */
+  'care-performed': { action: CareAction; animalId?: string };
 }
 
 const target = new EventTarget();

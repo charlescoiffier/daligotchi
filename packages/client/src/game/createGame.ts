@@ -22,7 +22,10 @@ export function createGame(parent: HTMLElement): GameHandle {
     width: HABITAT_WIDTH,
     height: HABITAT_HEIGHT,
     pixelArt: true,
-    backgroundColor: '#2b2340',
+    backgroundColor: '#ffffff',
+    // N'écouter que les touchers sur l'habitat : un toucher sur un menu posé par-dessus
+    // ne doit pas aussi sélectionner l'animal qui se trouve en dessous.
+    input: { windowEvents: false },
     scale: {
       mode: Phaser.Scale.NONE,
       autoCenter: Phaser.Scale.CENTER_BOTH,

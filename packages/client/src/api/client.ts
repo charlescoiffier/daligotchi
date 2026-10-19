@@ -1,4 +1,4 @@
-import type { AnimalDescription, Form, MessageKey, Stage } from '@daligotchi/core';
+import type { AnimalAction, AnimalDescription, Form, HouseholdAction, MessageKey, Stage } from '@daligotchi/core';
 
 export interface Health {
   status: 'ok' | 'degraded';
@@ -26,6 +26,9 @@ export interface Household {
   slots: { used: number; total: number };
   animals: HouseholdAnimal[];
 }
+
+/** Un soin : action de foyer, ou action sur un animal (la balle sans animal va à tout le foyer). */
+export type CareRequest = { action: HouseholdAction } | { action: AnimalAction; animalId?: string };
 
 /** Erreur d'API : `status` 0 signifie que le serveur n'a pas répondu. */
 export class ApiError extends Error {
@@ -60,4 +63,5 @@ export const api = {
     request<{ player: Player }>('POST', '/api/auth/login', { pseudo, password }),
   logout: () => request<{ ok: true }>('POST', '/api/auth/logout'),
   household: () => request<Household>('GET', '/api/household'),
+  care: (care: CareRequest) => request<Household>('POST', '/api/household/care', care),
 };

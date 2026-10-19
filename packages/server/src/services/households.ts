@@ -2,7 +2,9 @@ import {
   type AnimalDescription,
   type AnimalState,
   advanceHousehold,
+  applyCare,
   BALANCE,
+  type CareAction,
   describeAnimal,
   describeHome,
   type Form,
@@ -33,15 +35,23 @@ export interface HouseholdView {
   }[];
 }
 
+/** L'animal visé n'existe pas dans le foyer de ce joueur. */
+export class AnimalNotFoundError extends Error {
+  constructor(animalId: string) {
+    super(`Animal ${animalId} introuvable dans ce foyer`);
+  }
+}
+
 /**
- * Visite d'un responsable : calcule l'état actuel du foyer, l'enregistre comme nouvel
- * instantané et note la visite (pour le vieillissement ralenti). Verrouille le foyer
- * pendant l'opération pour que deux visites simultanées ne se marchent pas dessus.
+ * Visite d'un responsable : calcule l'état actuel du foyer, applique éventuellement un soin,
+ * enregistre le résultat comme nouvel instantané et note la visite (vieillissement ralenti).
+ * Le foyer est verrouillé pendant l'opération : deux visites simultanées ne se marchent pas dessus.
  */
-export async function visitHousehold(
+async function withVisit(
   { db }: Database,
   playerId: string,
   worldNow: number,
+  care?: { action: CareAction; animalId?: string },
 ): Promise<HouseholdView> {
   return db.transaction(async (tx) => {
     const [householdRow] = await tx
@@ -70,7 +80,13 @@ export async function visitHousehold(
         }),
       ),
     };
-    const after = advanceHousehold(before, worldNow);
+    let after = advanceHousehold(before, worldNow);
+
+    if (care) {
+      const index = care.animalId ? animalRows.findIndex((row) => row.id === care.animalId) : undefined;
+      if (index === -1) throw new AnimalNotFoundError(care.animalId!);
+      after = applyCare(after, care.action, index);
+    }
 
     await tx
       .update(households)
@@ -101,6 +117,20 @@ export async function visitHousehold(
       }),
     };
   });
+}
+
+export function visitHousehold(database: Database, playerId: string, worldNow: number) {
+  return withVisit(database, playerId, worldNow);
+}
+
+/** Applique un soin pendant une visite et renvoie le foyer à jour. */
+export function careForHousehold(
+  database: Database,
+  playerId: string,
+  worldNow: number,
+  care: { action: CareAction; animalId?: string },
+) {
+  return withVisit(database, playerId, worldNow, care);
 }
 
 /** Ajoute un animal fondateur (sans parents) dans le foyer d'un joueur. Sert aux données de test. */

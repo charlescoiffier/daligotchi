@@ -3,6 +3,7 @@ import {
   advanceAnimal,
   advanceHousehold,
   applyAnimalAction,
+  applyCare,
   applyHouseholdAction,
   type AnimalState,
   describeAnimal,
@@ -113,3 +114,30 @@ describe('describeAnimal', () => {
     expect(describeAnimal(elder, 100).elderSigns).toBe(true);
   });
 });
+
+describe('applyCare', () => {
+  const bored = { ...newbornAnimal(0), needs: { ...FULL_NEEDS, fun: 10, hygiene: 10 } };
+
+  it('la balle sans animal choisi amuse tout le foyer', () => {
+    const h = applyCare(household([bored, bored]), 'ball');
+    for (const animal of h.animals) expect(animal.needs.fun).toBe(45);
+  });
+
+  it('une action sur un animal ne touche que lui', () => {
+    const h = applyCare(household([bored, bored]), 'wash', 1);
+    expect(h.animals[0]?.needs.hygiene).toBe(10);
+    expect(h.animals[1]?.needs.hygiene).toBe(100);
+  });
+
+  it('caresser ou laver sans animal choisi est refusé', () => {
+    expect(() => applyCare(household([bored]), 'pet')).toThrow();
+    expect(() => applyCare(household([bored]), 'wash')).toThrow();
+  });
+
+  it('les actions du foyer ignorent l’animal choisi', () => {
+    const hungry = { ...newbornAnimal(0), needs: { ...FULL_NEEDS, satiety: 10 } };
+    const h = applyCare(household([hungry, hungry]), 'feed', 0);
+    for (const animal of h.animals) expect(animal.needs.satiety).toBe(100);
+  });
+});
+
