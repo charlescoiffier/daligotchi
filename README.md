@@ -49,10 +49,27 @@ Le jeu s'ouvre sur http://localhost:5173 et l'API répond sur http://localhost:3
 
 `pnpm db:init` crée un Postgres propre au projet dans `.data/` (port 5434, accessible uniquement en local). Après un redémarrage du Mac, il suffit de lancer `pnpm db:start`.
 
+## Jouer depuis les téléphones de la maison
+
+Sur le Mac, à la place de `pnpm dev` :
+
+```bash
+pnpm dev:wifi
+```
+
+Le terminal affiche une ligne `Network: http://192.168.x.x:5173/` : c'est l'adresse à ouvrir dans le navigateur des téléphones et tablettes **connectés au même Wi-Fi**.
+
+- La première fois, macOS peut demander d'autoriser les connexions entrantes pour « node » : répondre **Autoriser**.
+- Le Mac doit rester allumé et éveillé pendant la partie.
+- L'adresse peut changer d'un jour à l'autre (elle est attribuée par la box) : se fier à la ligne `Network:`.
+- Sur le téléphone, « Ajouter à l'écran d'accueil » donne un raccourci vers le jeu.
+- `pnpm dev` (sans `:wifi`) garde le jeu accessible depuis le Mac seulement.
+
 ## Commandes utiles
 
 | Commande | Rôle |
 |---|---|
+| `pnpm dev:wifi` | Lance le jeu pour les appareils du Wi-Fi de la maison |
 | `pnpm test` | Tous les tests (core, serveur, client) |
 | `pnpm typecheck` | Vérification des types |
 | `pnpm simulate` | Fait vivre un animal toute sa vie en une seconde (options : `--visites 0\|1\|2`, `--jours`, `--absence 40:10`, `--longevite 1.1`, `--detail`) |

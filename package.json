@@ -5,6 +5,7 @@
   "packageManager": "pnpm@12.14.0",
   "scripts": {
     "dev": "pnpm --parallel --filter @daligotchi/server --filter @daligotchi/client dev",
+    "dev:wifi": "DALIGOTCHI_WIFI=1 pnpm dev",
     "build": "pnpm --filter @daligotchi/client build && pnpm --filter @daligotchi/server build",
     "test": "vitest run",
     "test:watch": "vitest",

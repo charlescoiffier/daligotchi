@@ -5,6 +5,9 @@ export default defineConfig({
   plugins: [preact()],
   server: {
     port: 5173,
+    // `pnpm dev:wifi` ouvre le jeu aux appareils du réseau de la maison ;
+    // sinon il n'est accessible que depuis cet ordinateur.
+    host: process.env.DALIGOTCHI_WIFI === '1' ? true : 'localhost',
     // En développement, les appels /api partent vers le serveur Fastify.
     proxy: { '/api': 'http://127.0.0.1:3000' },
   },

@@ -3,19 +3,23 @@ import Phaser from 'phaser';
 import type { Household, HouseholdAnimal } from '../api/client.ts';
 import { bridge } from '../bridge.ts';
 
-/** Taille logique de l'habitat, en pixels du jeu (portrait). */
-export const HABITAT_WIDTH = 180;
-export const HABITAT_HEIGHT = 320;
+/**
+ * Taille logique de l'habitat, en pixels du jeu (portrait). Plus elle est petite,
+ * plus tout est agrandi à l'écran : 120 × 180 donne ×3 sur un téléphone courant.
+ */
+export const HABITAT_WIDTH = 120;
+export const HABITAT_HEIGHT = 180;
 
-const GROUND_Y = 250;
-/** Six places : deux rangées de trois. */
+/** Limite entre le ciel et le sol. */
+const HORIZON_Y = 100;
+/** Six places : deux rangées de trois (coordonnées des pattes). */
 const SLOT_POSITIONS = [
-  [40, GROUND_Y],
-  [90, GROUND_Y],
-  [140, GROUND_Y],
-  [40, GROUND_Y + 45],
-  [90, GROUND_Y + 45],
-  [140, GROUND_Y + 45],
+  [24, 132],
+  [60, 132],
+  [96, 132],
+  [24, 166],
+  [60, 166],
+  [96, 166],
 ] as const;
 
 const STAGE_SPRITE: Record<Stage, string> = { young: 'jeune', adult: 'adulte', old: 'vieux' };
@@ -101,10 +105,10 @@ export class HabitatScene extends Phaser.Scene {
   private drawGround() {
     const g = this.add.graphics();
     g.fillStyle(0x3b3157).fillRect(0, 0, HABITAT_WIDTH, HABITAT_HEIGHT);
-    g.fillStyle(0x7fb069).fillRect(0, GROUND_Y - 30, HABITAT_WIDTH, HABITAT_HEIGHT - GROUND_Y + 30);
+    g.fillStyle(0x7fb069).fillRect(0, HORIZON_Y, HABITAT_WIDTH, HABITAT_HEIGHT - HORIZON_Y);
     g.fillStyle(0x6a9a57);
     for (let x = 4; x < HABITAT_WIDTH; x += 12) {
-      g.fillRect(x, GROUND_Y - 30 + ((x * 7) % 60), 2, 1);
+      g.fillRect(x, HORIZON_Y + 4 + ((x * 7) % 70), 2, 1);
     }
   }
 }
