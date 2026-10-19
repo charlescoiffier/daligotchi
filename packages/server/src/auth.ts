@@ -4,7 +4,7 @@ import fp from 'fastify-plugin';
 import type { Config } from './config.ts';
 import type { Database } from './db/client.ts';
 import type { Player } from './services/players.ts';
-import { findSessionPlayer, SESSION_DURATION_MS } from './services/sessions.ts';
+import { findSessionPlayer, SESSION_DURATION_MS, touchLastSeen } from './services/sessions.ts';
 
 export const SESSION_COOKIE = 'dg_session';
 
@@ -44,5 +44,6 @@ export const authPlugin = fp<AuthOptions>(async (app: FastifyInstance, { databas
       return reply.code(401).send({ error: 'not_authenticated' });
     }
     request.player = player;
+    await touchLastSeen(database, player.id, now());
   });
 });

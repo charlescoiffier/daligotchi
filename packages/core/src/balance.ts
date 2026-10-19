@@ -70,6 +70,34 @@ export const BALANCE = {
     slowAgingFactor: 0.5,
   },
 
+  /**
+   * Incubation (GDD §6). L'œuf a une chaleur (couver) et une propreté (laver) qui baissent
+   * avec le temps. L'incubation avance en continu, d'autant plus vite que l'œuf est soigné :
+   * un œuf parfaitement soigné éclot en `fullCareDays` jours, un œuf délaissé avance
+   * très lentement mais ne recule jamais.
+   */
+  egg: {
+    warmthDecayPerHour: 5,
+    cleanlinessDecayPerHour: 2,
+    /** Un œuf adopté arrive un peu froid. */
+    startWarmth: 50,
+    startCleanliness: 100,
+    warmBoost: 60,
+    fullCareDays: 1,
+    /** Paliers des libellés d'avancement (« dort », « bouge un peu », « va bientôt éclore »). */
+    progressSteps: [0.35, 0.7],
+  },
+
+  /** Lieu d'adoption : seuils distincts pour ajouter et retirer les œufs du jeu (GDD §10). */
+  adoption: {
+    /** Un joueur est « récemment actif » s'il s'est connecté pendant cette durée (temps réel). */
+    activeWindowMs: 7 * DAY,
+    eggsPerActivePlayer: 1.5,
+    minimumEggs: 3,
+    /** Au-delà de `removeAboveFactor` × la cible, les œufs du jeu les plus anciens sont retirés. */
+    removeAboveFactor: 2,
+  },
+
   /** Œuf du nid déposé automatiquement au lieu d'adoption. */
   nestAutoDepositAfter: 7 * DAY,
 

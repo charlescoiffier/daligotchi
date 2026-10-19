@@ -16,6 +16,11 @@ export const PALETTE: Record<string, string> = {
   b: '#5aa7e0', // bleu (eau)
   f: '#b07a45', // marron (croquettes)
   d: '#9c8c7a', // terre (saletés)
+  x: '#1e1e1e', // noir (contours des animaux)
+  o: '#ff6a14', // orange renard
+  n: '#7a3e12', // brun (intérieur des oreilles)
+  v: '#9b6bd1', // violet poulpe
+  V: '#6f46a6', // violet foncé
 };
 
 export const DRAWINGS = {
@@ -78,6 +83,65 @@ export const DRAWINGS = {
     '..ggggg..',
   ],
   speck: ['dd'],
+  egg: [
+    '...kkk...',
+    '..kwwwk..',
+    '.kwwwwwk.',
+    '.kwwlwwk.',
+    'kwwwwwwwk',
+    'kwwlwwwwk',
+    'kwwwwwlwk',
+    'kwwwwwwwk',
+    '.kwwwwwk.',
+    '..kkkkk..',
+  ],
+  eggCracked: [
+    '...kkk...',
+    '..kwwwk..',
+    '.kwwkwwk.',
+    '.kwkwkwk.',
+    'kwkwwwkwk',
+    'kwwwwwwwk',
+    'kwwlwwwwk',
+    'kwwwwwlwk',
+    '.kwwwwwk.',
+    '..kkkkk..',
+  ],
+  /** Provisoire, à redessiner dans Piskel. */
+  poulpe: [
+    '.....xxxxxxx.....',
+    '...xxvvvvvvvxx...',
+    '..xvvvvvvvvvvvx..',
+    '.xvvvvvvvvvvvvvx.',
+    '.xvvwxvvvvvwxvvx.',
+    '.xvvxxvvvvvxxvvx.',
+    '.xvvvvvvpvvvvvvx.',
+    '..xvvvvvvvvvvvx..',
+    '..xvVvvVvVvvVvx..',
+    '.xvVxvVxvxVvxVvx.',
+    '.xvx.xvxvxvx.xvx.',
+    'xvx..xvx.xvx..xvx',
+    'xx...xvx.xvx...xx',
+    '......x...x......',
+  ],
+  /** Provisoire, à redessiner dans Piskel : un poulpe avec des oreilles et un museau de renard. */
+  poulpard: [
+    '..xx.........xx..',
+    '..xnx.xxxxx.xnx..',
+    '..xnoxoooooxonx..',
+    '..xooooooooooox..',
+    '.xooooooooooooox.',
+    '.xoowxooooowxoox.',
+    '.xooxxooooooxxox.',
+    '.xoooowwxwwoooox.',
+    '..xooowwwwwooox..',
+    '..xoVooVoVooVox..',
+    '.xoVxoVxoxVoxVox.',
+    '.xox.xoxoxox.xox.',
+    'xwx..xox.xox..xwx',
+    'xx...xwx.xwx...xx',
+    '......x...x......',
+  ],
   groundDirt: [
     '.d.',
     'ddd',

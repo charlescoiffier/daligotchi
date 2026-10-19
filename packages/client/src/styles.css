@@ -346,3 +346,84 @@ body {
     transform: translateY(6px);
   }
 }
+
+/* Boutons du bas, adoption, renommage */
+
+.bottom-bar__buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.button--secondary {
+  font-size: 1rem;
+  padding: 11px 20px;
+  background: #fff;
+  color: var(--text);
+  border: 2px solid var(--panel-border);
+  box-shadow: 0 4px 0 var(--panel-border);
+}
+
+.panel__intro {
+  margin: 6px 0 10px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.adoption__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.adoption__egg {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid var(--panel-border);
+}
+
+.adoption__egg div {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+}
+
+.adoption__egg span {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.card__edit {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.card__rename {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.card__rename input {
+  font: inherit;
+  font-size: 1rem;
+  width: 10em;
+  padding: 6px 8px;
+  border: 2px solid var(--panel-border);
+  border-radius: 8px;
+}

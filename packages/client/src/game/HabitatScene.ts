@@ -1,8 +1,9 @@
-import { type CareAction, seededRandom } from '@daligotchi/core';
+import { type CareAction, type EggAction, seededRandom } from '@daligotchi/core';
 import Phaser from 'phaser';
-import type { Household } from '../api/client.ts';
+import type { Household, HouseholdAnimal } from '../api/client.ts';
 import { bridge } from '../bridge.ts';
 import { AnimalActor, WALK_ANIMATIONS } from './AnimalActor.ts';
+import { EggActor } from './EggActor.ts';
 import {
   FOOD_BOWL,
   HABITAT_HEIGHT,
@@ -25,6 +26,7 @@ const STAGES = ['jeune', 'adulte', 'vieux'] as const;
  */
 export class HabitatScene extends Phaser.Scene {
   private readonly actors = new Map<string, AnimalActor>();
+  private readonly eggs = new Map<string, EggActor>();
   private selectedId?: string;
   private foodBowl?: Phaser.GameObjects.Image;
   private waterBowl?: Phaser.GameObjects.Image;
@@ -63,7 +65,9 @@ export class HabitatScene extends Phaser.Scene {
       this.renderHousehold(household),
     );
 
-    const offCare = bridge.on('care-performed', ({ action, animalId }) => this.playCareEffect(action, animalId));
+    const offCare = bridge.on('care-performed', ({ action, animalId, eggId }) =>
+      this.playCareEffect(action, animalId, eggId),
+    );
     const offDeselect = bridge.on('animal-deselected', () => this.select(undefined));
     this.events.once(Phaser.Scenes.Events.DESTROY, () => {
       offCare();
@@ -73,26 +77,51 @@ export class HabitatScene extends Phaser.Scene {
 
   private renderHousehold(household: Household | undefined) {
     if (!household) return;
-    const ids = new Set(household.animals.map((animal) => animal.id));
 
+    // Éclosions : l'œuf se fêle, puis le bébé apparaît à sa place.
+    const hatchedIds = new Set(household.hatched.map((h) => h.animalId));
+    for (const hatching of household.hatched) {
+      const eggActor = this.eggs.get(hatching.eggId);
+      const animal = household.animals.find((a) => a.id === hatching.animalId);
+      if (!eggActor || !animal) continue;
+      this.eggs.delete(hatching.eggId);
+      const home = eggActor.home;
+      eggActor.hatch(() => {
+        this.sparkleAt(home[0], home[1] - 6, 4);
+        this.addAnimal(animal, home);
+      });
+    }
+
+    const animalIds = new Set(household.animals.map((animal) => animal.id));
     for (const [id, actor] of this.actors) {
-      if (!ids.has(id)) {
+      if (!animalIds.has(id)) {
         actor.destroy();
         this.actors.delete(id);
       }
     }
-
-    household.animals.forEach((animal, index) => {
-      const existing = this.actors.get(animal.id);
-      if (existing) {
-        existing.update(animal);
-      } else {
-        const home = SLOT_POSITIONS[index] ?? SLOT_POSITIONS[0];
-        const actor = new AnimalActor(this, animal, home, (a) => this.select(a.id, true));
-        actor.setSelected(animal.id === this.selectedId);
-        this.actors.set(animal.id, actor);
+    const eggIds = new Set(household.eggs.map((egg) => egg.id));
+    for (const [id, actor] of this.eggs) {
+      if (!eggIds.has(id)) {
+        actor.destroy();
+        this.eggs.delete(id);
       }
-    });
+    }
+
+    for (const animal of household.animals) {
+      const existing = this.actors.get(animal.id);
+      if (existing) existing.update(animal);
+      else if (!hatchedIds.has(animal.id)) this.addAnimal(animal, this.freeSlot());
+    }
+    for (const egg of household.eggs) {
+      const existing = this.eggs.get(egg.id);
+      if (existing) {
+        existing.update(egg);
+      } else {
+        const actor = new EggActor(this, egg, this.freeSlot(), (a) => this.select(a.id, 'egg'));
+        actor.setSelected(egg.id === this.selectedId);
+        this.eggs.set(egg.id, actor);
+      }
+    }
 
     // Gamelles pleines tant que tout le monde est rassasié / désaltéré.
     const all = (need: 'satiety' | 'hydration') =>
@@ -103,15 +132,36 @@ export class HabitatScene extends Phaser.Scene {
     this.showGroundDirt(household.home.split('.').pop() as 'good' | 'low' | 'bad');
   }
 
-  private select(id: string | undefined, notify = false) {
-    this.selectedId = id;
-    for (const actor of this.actors.values()) actor.setSelected(actor.id === id);
-    if (notify && id) bridge.emit('animal-selected', { id });
+  private addAnimal(animal: HouseholdAnimal, home: readonly [number, number]) {
+    const actor = new AnimalActor(this, animal, home, (a) => this.select(a.id, 'animal'));
+    actor.setSelected(animal.id === this.selectedId);
+    this.actors.set(animal.id, actor);
   }
 
-  private playCareEffect(action: CareAction, animalId?: string) {
+  /** Première des six places qui n'est occupée par aucun animal ni œuf. */
+  private freeSlot(): readonly [number, number] {
+    const taken = new Set([...this.actors.values(), ...this.eggs.values()].map((actor) => actor.home.join(',')));
+    return SLOT_POSITIONS.find((slot) => !taken.has(slot.join(','))) ?? SLOT_POSITIONS[0];
+  }
+
+  private select(id: string | undefined, kind?: 'animal' | 'egg') {
+    this.selectedId = id;
+    for (const actor of this.actors.values()) actor.setSelected(actor.id === id);
+    for (const actor of this.eggs.values()) actor.setSelected(actor.id === id);
+    if (id && kind === 'animal') bridge.emit('animal-selected', { id });
+    if (id && kind === 'egg') bridge.emit('egg-selected', { id });
+  }
+
+  private playCareEffect(action: CareAction | EggAction, animalId?: string, eggId?: string) {
     const target = animalId ? this.actors.get(animalId) : undefined;
+    const egg = eggId ? this.eggs.get(eggId) : undefined;
     switch (action) {
+      case 'warmEgg':
+        if (egg) for (let i = 0; i < 2; i++) this.time.delayedCall(i * 250, () => this.floatUp('heart', egg.x, egg.top - 2));
+        break;
+      case 'washEgg':
+        if (egg) this.sparkleAt(egg.x, egg.top + 4, 3);
+        break;
       case 'feed':
         this.sparkleAt(FOOD_BOWL.x, FOOD_BOWL.y - 4, 3);
         break;
@@ -161,6 +211,11 @@ export class HabitatScene extends Phaser.Scene {
         this.tweens.add({ targets: ball, alpha: 0, delay: 600, duration: 300, onComplete: () => ball.destroy() });
       },
     });
+  }
+
+  private floatUp(texture: string, x: number, y: number) {
+    const image = this.add.image(Math.round(x), Math.round(y), texture).setDepth(1000);
+    this.tweens.add({ targets: image, y: y - 12, alpha: 0, duration: 1200, onComplete: () => image.destroy() });
   }
 
   private sparkleAt(x: number, y: number, count: number) {

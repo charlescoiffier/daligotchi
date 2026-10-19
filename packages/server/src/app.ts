@@ -6,6 +6,7 @@ import Fastify from 'fastify';
 import { authPlugin } from './auth.ts';
 import type { Config } from './config.ts';
 import type { Database } from './db/client.ts';
+import { adoptionRoutes } from './routes/adoption.ts';
 import { authRoutes } from './routes/auth.ts';
 import { healthRoutes } from './routes/health.ts';
 import { householdRoutes } from './routes/household.ts';
@@ -43,6 +44,7 @@ export async function buildApp({ config, database, now = Date.now }: AppDeps) {
       await api.register(healthRoutes, { config, database });
       await api.register(authRoutes, { config, database, now });
       await api.register(householdRoutes, { database, worldNow });
+      await api.register(adoptionRoutes, { database, worldNow });
     },
     { prefix: '/api' },
   );

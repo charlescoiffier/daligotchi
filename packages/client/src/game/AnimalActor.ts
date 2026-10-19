@@ -5,8 +5,6 @@ import { type Behaviour, chooseBehaviour } from '../behaviour/chooseBehaviour.ts
 import { clampToWalkArea, FOOD_BOWL } from './layout.ts';
 
 const STAGE_SPRITE: Record<Stage, string> = { young: 'jeune', adult: 'adulte', old: 'vieux' };
-/** Formes déjà dessinées. Les autres utilisent provisoirement le renard. */
-const DRAWN_FORMS = new Set(['renard']);
 /** Animations de marche existantes (planches Piskel). */
 export const WALK_ANIMATIONS = new Set(['renard_adulte']);
 
@@ -40,7 +38,7 @@ export class AnimalActor {
   constructor(
     private readonly scene: Phaser.Scene,
     private animal: HouseholdAnimal,
-    private readonly home: readonly [number, number],
+    readonly home: readonly [number, number],
     onSelect: (actor: AnimalActor) => void,
   ) {
     this.container = scene.add.container(home[0], home[1]).setDepth(home[1]);
@@ -91,9 +89,16 @@ export class AnimalActor {
     return this.container.y - this.sprite.height;
   }
 
+  /**
+   * Dessin à utiliser : la planche Piskel de la forme et de l'âge si elle existe,
+   * sinon le dessin provisoire en caractères de la forme, sinon le renard.
+   */
   private get spriteBase() {
-    const form = DRAWN_FORMS.has(this.animal.form) ? this.animal.form : 'renard';
-    return `${form}_${STAGE_SPRITE[this.animal.stage]}`;
+    const stage = STAGE_SPRITE[this.animal.stage];
+    const sheet = `${this.animal.form}_${stage}`;
+    if (this.scene.textures.exists(sheet)) return sheet;
+    if (this.scene.textures.exists(this.animal.form)) return this.animal.form;
+    return `renard_${stage}`;
   }
 
   /** Nouvel état venu du serveur (après une visite ou un soin). */

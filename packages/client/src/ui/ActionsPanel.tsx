@@ -1,4 +1,4 @@
-import type { AnimalAction, HouseholdAction } from '@daligotchi/core';
+import { EGG_ACTIONS, type AnimalAction, type EggAction, type HouseholdAction } from '@daligotchi/core';
 import { t } from '../i18n/index.ts';
 
 const HOME_ACTIONS: readonly HouseholdAction[] = ['feed', 'water', 'cleanHome'];
@@ -6,17 +6,20 @@ export const ANIMAL_ACTIONS: readonly AnimalAction[] = ['pet', 'ball', 'wash'];
 
 interface ActionsPanelProps {
   hasAnimals: boolean;
+  hasEggs: boolean;
   busy: boolean;
   onHomeAction: (action: HouseholdAction) => void;
   onBallForAll: () => void;
   /** L'action est choisie d'abord ; il faudra ensuite toucher un animal. */
   onChooseAnimalAction: (action: AnimalAction) => void;
+  /** Même principe pour les œufs : l'action d'abord, puis toucher l'œuf. */
+  onChooseEggAction: (action: EggAction) => void;
   onClose: () => void;
 }
 
 /** Panneau du bouton Actions : soins du foyer, puis soins pour un animal (GDD §5). */
 export function ActionsPanel(props: ActionsPanelProps) {
-  const { hasAnimals, busy } = props;
+  const { hasAnimals, hasEggs, busy } = props;
   return (
     <section class="panel" aria-label={t('actions.button')}>
       <header class="panel__header">
@@ -50,6 +53,25 @@ export function ActionsPanel(props: ActionsPanelProps) {
           </button>
         ))}
       </div>
+
+      {hasEggs && (
+        <>
+          <h2>{t('actions.forEgg')}</h2>
+          <div class="panel__buttons">
+            {EGG_ACTIONS.map((action) => (
+              <button
+                key={action}
+                type="button"
+                class="button button--action"
+                disabled={busy}
+                onClick={() => props.onChooseEggAction(action)}
+              >
+                {t(`action.${action}`)}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </section>
   );
 }

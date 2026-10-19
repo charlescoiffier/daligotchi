@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { and, eq, gt } from 'drizzle-orm';
+import { and, eq, gt, isNull, lt, or } from 'drizzle-orm';
 import type { Database } from '../db/client.ts';
 import { players, sessions } from '../db/schema.ts';
 import type { Player } from './players.ts';
@@ -38,4 +38,21 @@ export async function findSessionPlayer(
 
 export async function deleteSession({ db }: Database, token: string) {
   await db.delete(sessions).where(eq(sessions.tokenHash, hashToken(token)));
+}
+
+/**
+ * Note que le joueur est actif (au plus une écriture par minute). Sert à compter
+ * les joueurs récemment actifs pour le lieu d'adoption.
+ */
+export async function touchLastSeen({ db }: Database, playerId: string, realNowMs: number) {
+  const now = new Date(realNowMs);
+  await db
+    .update(players)
+    .set({ lastSeenAt: now })
+    .where(
+      and(
+        eq(players.id, playerId),
+        or(isNull(players.lastSeenAt), lt(players.lastSeenAt, new Date(realNowMs - 60_000))),
+      ),
+    );
 }

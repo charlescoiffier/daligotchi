@@ -15,6 +15,13 @@
       "when": 1792411948736,
       "tag": "0001_accounts_households",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792414212495,
+      "tag": "0002_eggs",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,8 @@
 import type { Form, Needs, Species } from '@daligotchi/core';
+import { sql } from 'drizzle-orm';
 import {
   bigint,
+  check,
   doublePrecision,
   index,
   integer,
@@ -79,4 +81,42 @@ export const animals = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('animals_household_idx').on(table.householdId)],
+);
+
+export type EggStatus = 'available' | 'incubating' | 'hatched' | 'removed';
+
+/**
+ * Œuf : au lieu d'adoption (`available`, sans foyer), en incubation dans un foyer,
+ * éclos (il reste pour la généalogie) ou retiré. L'espèce est tirée une seule fois,
+ * à la création, et n'est jamais montrée avant l'éclosion.
+ */
+export const eggs = pgTable(
+  'eggs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    status: text('status').$type<EggStatus>().notNull(),
+    /** `game` : fondateur créé par le jeu ; `player` : pondu par des animaux de joueurs. */
+    origin: text('origin').$type<'game' | 'player'>().notNull(),
+    householdId: uuid('household_id').references(() => households.id, { onDelete: 'restrict' }),
+    genotype: jsonb('genotype').$type<readonly [Species, Species]>().notNull(),
+    form: text('form').$type<Form>().notNull(),
+    warmth: doublePrecision('warmth').notNull(),
+    cleanliness: doublePrecision('cleanliness').notNull(),
+    progress: doublePrecision('progress').notNull(),
+    at: worldTime('at').notNull(),
+    /** Arrivée au lieu d'adoption (pour retirer les plus anciens). */
+    listedAt: worldTime('listed_at').notNull(),
+    hatchedAnimalId: uuid('hatched_animal_id').references(() => animals.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('eggs_status_idx').on(table.status),
+    index('eggs_household_idx').on(table.householdId),
+    check(
+      'eggs_status_household',
+      sql`${table.status} in ('available', 'incubating', 'hatched', 'removed')
+        and (${table.status} <> 'incubating' or ${table.householdId} is not null)
+        and (${table.status} <> 'available' or ${table.householdId} is null)`,
+    ),
+  ],
 );
