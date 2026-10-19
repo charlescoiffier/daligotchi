@@ -28,7 +28,7 @@ Les règles du jeu sont décrites dans le [Game Design Document](outputs/Daligot
 | 2 | Comptes et foyer | ✅ |
 | 3 | Soins, décor, comportements des animaux | ✅ |
 | 4 | Œufs, incubation, éclosion, lieu d'adoption | ✅ |
-| 5 | Mise en ligne de test | 🚧 |
+| 5 | Mise en ligne de test | ✅ |
 | 6 | Relations : amour, pontes, nid, généalogie | |
 | 7 | Rencontres entre joueurs | |
 | 8 | Fin de vie | |
