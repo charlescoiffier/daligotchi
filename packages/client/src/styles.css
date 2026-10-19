@@ -1,11 +1,13 @@
 :root {
   --bg: #2b2340;
-  --panel: rgba(27, 21, 42, 0.85);
+  --panel: rgba(27, 21, 42, 0.92);
   --text: #f6efe0;
+  --muted: #b9b0c9;
   --accent: #ff7a1a;
-  --ok: #7fb069;
-  --warn: #e0a030;
-  --error: #e05a5a;
+  --accent-shadow: #b4520c;
+  --good: #8fcf7a;
+  --low: #e8b04a;
+  --bad: #f07070;
   color-scheme: dark;
 }
 
@@ -45,54 +47,206 @@ body {
   padding: max(12px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
 }
 
-.top-bar,
-.bottom-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+#ui > * {
   pointer-events: auto;
 }
 
-.bottom-bar {
-  justify-content: center;
+/* Boutons */
+
+.button {
+  font: inherit;
+  font-weight: 700;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.button--primary {
+  font-size: 1.1rem;
+  padding: 12px 32px;
+  background: var(--accent);
+  color: #1b152a;
+  box-shadow: 0 4px 0 var(--accent-shadow);
+}
+
+.button--small {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  background: var(--panel);
+  color: var(--muted);
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* Barres */
+
+.top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.top > .top-bar {
+  align-self: stretch;
+}
+
+.top-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .top-bar h1 {
   margin: 0;
   font-size: 1.25rem;
-  letter-spacing: 0.02em;
 }
 
-.status {
+.top-bar__info {
+  margin: 2px 0 0;
   font-size: 0.8rem;
-  padding: 4px 10px;
-  border-radius: 999px;
+  color: var(--muted);
+}
+
+.bottom-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.notice {
+  align-self: center;
+  margin: auto 0;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--muted);
+}
+
+/* Connexion */
+
+.login {
+  margin: auto;
+  width: min(100%, 340px);
+  padding: 24px;
+  border-radius: 16px;
   background: var(--panel);
 }
 
-.status--ok {
-  color: var(--ok);
-}
-.status--checking {
-  color: var(--warn);
-}
-.status--down {
-  color: var(--error);
+.login__title {
+  margin: 0 0 16px;
+  text-align: center;
+  font-size: 1.8rem;
 }
 
-.actions-button {
+.login__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.login__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.login__form input {
   font: inherit;
-  font-weight: 700;
-  font-size: 1.1rem;
-  padding: 12px 32px;
-  border: 0;
-  border-radius: 12px;
-  background: var(--accent);
-  color: #1b152a;
-  box-shadow: 0 4px 0 #b4520c;
+  font-size: 1rem;
+  padding: 10px 12px;
+  border: 2px solid #4a3f66;
+  border-radius: 10px;
+  background: #1b152a;
+  color: var(--text);
 }
 
-.actions-button:disabled {
-  opacity: 0.55;
+.login__form input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.login__error {
+  margin: 0;
+  color: var(--bad);
+  font-size: 0.9rem;
+}
+
+/* Fiche d'un animal */
+
+.card {
+  width: min(100%, 360px);
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--panel);
+}
+
+.card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.card__name {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.card__subtitle {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.card__close {
+  font: inherit;
+  font-size: 1.4rem;
+  line-height: 1;
+  padding: 2px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.card__elder {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--low);
+}
+
+.card__needs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.need {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #1b152a;
+}
+
+.need--good {
+  color: var(--good);
+}
+.need--low {
+  color: var(--low);
+}
+.need--bad {
+  color: var(--bad);
 }

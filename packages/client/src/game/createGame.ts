@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { HABITAT_HEIGHT, HABITAT_WIDTH, HabitatScene } from './HabitatScene.ts';
+import type { Household } from '../api/client.ts';
+import { HABITAT_HEIGHT, HABITAT_WIDTH, HabitatScene, HOUSEHOLD_KEY } from './HabitatScene.ts';
 
 /** Plus grand agrandissement entier qui tient dans la fenêtre : les pixels restent nets. */
 export function integerZoom(viewportWidth: number, viewportHeight: number): number {
@@ -9,7 +10,12 @@ export function integerZoom(viewportWidth: number, viewportHeight: number): numb
   );
 }
 
-export function createGame(parent: HTMLElement): Phaser.Game {
+export interface GameHandle {
+  setHousehold(household: Household): void;
+  destroy(): void;
+}
+
+export function createGame(parent: HTMLElement): GameHandle {
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent,
@@ -25,9 +31,19 @@ export function createGame(parent: HTMLElement): Phaser.Game {
     scene: [HabitatScene],
   });
 
-  window.addEventListener('resize', () => {
-    game.scale.setZoom(integerZoom(window.innerWidth, window.innerHeight));
-  });
+  // Valeur initiale : chaque mise à jour déclenchera ensuite `changedata-household`.
+  game.registry.set(HOUSEHOLD_KEY, undefined);
 
-  return game;
+  const onResize = () => game.scale.setZoom(integerZoom(window.innerWidth, window.innerHeight));
+  window.addEventListener('resize', onResize);
+
+  return {
+    setHousehold(household) {
+      game.registry.set(HOUSEHOLD_KEY, household);
+    },
+    destroy() {
+      window.removeEventListener('resize', onResize);
+      game.destroy(true);
+    },
+  };
 }

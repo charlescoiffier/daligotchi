@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: { index: 'src/index.ts', migrate: 'src/db/migrate.ts' },
+  entry: { index: 'src/index.ts', migrate: 'src/db/migrate.ts', admin: 'src/admin/cli.ts' },
   format: 'esm',
   platform: 'node',
   target: 'node24',

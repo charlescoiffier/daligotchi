@@ -30,6 +30,9 @@ export type Hybrid = (typeof HYBRIDS)[keyof typeof HYBRIDS];
 /** Forme visible d'un animal : espèce fondatrice ou hybride. */
 export type Form = Species | Hybrid;
 
+/** Les 21 formes possibles : 6 espèces fondatrices et 15 hybrides. */
+export const FORMS: readonly Form[] = [...SPECIES, ...Object.values(HYBRIDS)];
+
 export function makeGenotype(a: Species, b: Species): Genotype {
   return SPECIES.indexOf(a) <= SPECIES.indexOf(b) ? [a, b] : [b, a];
 }

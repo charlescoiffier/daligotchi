@@ -1,54 +1,101 @@
+import type { Stage } from '@daligotchi/core';
 import Phaser from 'phaser';
+import type { Household, HouseholdAnimal } from '../api/client.ts';
+import { bridge } from '../bridge.ts';
 
 /** Taille logique de l'habitat, en pixels du jeu (portrait). */
 export const HABITAT_WIDTH = 180;
 export const HABITAT_HEIGHT = 320;
 
 const GROUND_Y = 250;
+/** Six places : deux rangées de trois. */
+const SLOT_POSITIONS = [
+  [40, GROUND_Y],
+  [90, GROUND_Y],
+  [140, GROUND_Y],
+  [40, GROUND_Y + 45],
+  [90, GROUND_Y + 45],
+  [140, GROUND_Y + 45],
+] as const;
 
-/** Habitat de démonstration : trois renards assis et un renard qui se promène. */
+const STAGE_SPRITE: Record<Stage, string> = { young: 'jeune', adult: 'adulte', old: 'vieux' };
+/** Formes déjà dessinées. Les autres utilisent provisoirement le renard. */
+const DRAWN_FORMS = new Set(['renard']);
+
+export const HOUSEHOLD_KEY = 'household';
+
+/** Habitat : affiche les animaux du foyer, assis à leur place ; un toucher ouvre leur fiche. */
 export class HabitatScene extends Phaser.Scene {
+  private animalLayer?: Phaser.GameObjects.Container;
+  private selectionMarker?: Phaser.GameObjects.Graphics;
+
   constructor() {
     super('habitat');
   }
 
   preload() {
-    this.load.image('renard_jeune', 'sprites/renard_jeune.png');
-    this.load.image('renard_adulte', 'sprites/renard_adulte.png');
-    this.load.image('renard_vieux', 'sprites/renard_vieux.png');
-    this.load.spritesheet('renard_adulte_marche', 'sprites/renard_adulte_marche.png', {
-      frameWidth: 27,
-      frameHeight: 17,
-    });
+    for (const stage of Object.values(STAGE_SPRITE)) {
+      this.load.image(`renard_${stage}`, `sprites/renard_${stage}.png`);
+    }
   }
 
   create() {
     this.drawGround();
+    this.animalLayer = this.add.container(0, 0);
+    this.selectionMarker = this.add.graphics().setVisible(false);
 
-    this.add.image(40, GROUND_Y, 'renard_jeune').setOrigin(0.5, 1);
-    this.add.image(90, GROUND_Y, 'renard_adulte').setOrigin(0.5, 1);
-    this.add.image(140, GROUND_Y, 'renard_vieux').setOrigin(0.5, 1);
+    this.renderAnimals(this.registry.get(HOUSEHOLD_KEY) as Household | undefined);
+    this.registry.events.on(`changedata-${HOUSEHOLD_KEY}`, (_: unknown, household: Household) =>
+      this.renderAnimals(household),
+    );
+  }
 
-    this.anims.create({
-      key: 'renard_marche',
-      frames: this.anims.generateFrameNumbers('renard_adulte_marche', { start: 0, end: 7 }),
-      frameRate: 8,
-      repeat: -1,
+  private spriteKey(animal: HouseholdAnimal): string {
+    const form = DRAWN_FORMS.has(animal.form) ? animal.form : 'renard';
+    return `${form}_${STAGE_SPRITE[animal.stage]}`;
+  }
+
+  private renderAnimals(household: Household | undefined) {
+    this.animalLayer?.removeAll(true);
+    this.selectionMarker?.setVisible(false);
+    if (!household) return;
+
+    household.animals.forEach((animal, index) => {
+      const [x, y] = SLOT_POSITIONS[index] ?? SLOT_POSITIONS[0];
+      const sprite = this.add.image(x, y, this.spriteKey(animal)).setOrigin(0.5, 1);
+
+      // Zone de toucher un peu plus grande que le dessin, pour les petits doigts.
+      sprite.setInteractive({
+        hitArea: new Phaser.Geom.Rectangle(-6, -6, sprite.width + 12, sprite.height + 12),
+        hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+        useHandCursor: true,
+      });
+      sprite.on('pointerdown', () => {
+        this.markSelection(x, y - sprite.height - 4);
+        bridge.emit('animal-selected', { id: animal.id });
+      });
+
+      // Respiration : un léger mouvement, décalé pour chaque animal.
+      this.tweens.add({
+        targets: sprite,
+        y: y - 1,
+        duration: 900,
+        yoyo: true,
+        repeat: -1,
+        delay: index * 250,
+        ease: 'Stepped',
+      });
+
+      this.animalLayer?.add(sprite);
     });
+  }
 
-    const walker = this.add.sprite(20, GROUND_Y + 40, 'renard_adulte_marche').setOrigin(0.5, 1);
-    walker.play('renard_marche');
-
-    // Aller-retour : la planche regarde vers la droite, on la retourne au retour.
-    this.tweens.add({
-      targets: walker,
-      x: HABITAT_WIDTH - 20,
-      duration: 6000,
-      yoyo: true,
-      repeat: -1,
-      onYoyo: () => walker.setFlipX(true),
-      onRepeat: () => walker.setFlipX(false),
-    });
+  private markSelection(x: number, y: number) {
+    this.selectionMarker
+      ?.clear()
+      .fillStyle(0xffffff)
+      .fillTriangle(x - 3, y - 3, x + 3, y - 3, x, y)
+      .setVisible(true);
   }
 
   private drawGround() {

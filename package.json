@@ -14,7 +14,9 @@
     "db:stop": "sh scripts/db-local.sh stop",
     "db:generate": "pnpm --filter @daligotchi/server db:generate",
     "db:migrate": "pnpm --filter @daligotchi/server db:migrate",
-    "simulate": "pnpm --silent --filter @daligotchi/core simulate"
+    "simulate": "pnpm --silent --filter @daligotchi/core simulate",
+    "admin": "pnpm --silent --filter @daligotchi/server admin",
+    "db:seed": "pnpm --silent --filter @daligotchi/server admin seed-test-accounts"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
