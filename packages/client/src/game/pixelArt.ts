@@ -142,6 +142,31 @@ export const DRAWINGS = {
     'xx...xwx.xwx...xx',
     '......x...x......',
   ],
+  /** Nid avec 1, 2 ou 3 œufs visibles (au-delà, on en montre 3). */
+  nest1: [
+    '......k......',
+    '.....kwk.....',
+    '.....kwk.....',
+    'n.nnnnnnnnn.n',
+    '.nfnfnfnfnfn.',
+    '..nnnnnnnnn..',
+  ],
+  nest2: [
+    '....k...k....',
+    '...kwk.kwk...',
+    '...kwk.kwk...',
+    'n.nnnnnnnnn.n',
+    '.nfnfnfnfnfn.',
+    '..nnnnnnnnn..',
+  ],
+  nest3: [
+    '..k...k...k..',
+    '.kwk.kwk.kwk.',
+    '.kwk.kwk.kwk.',
+    'n.nnnnnnnnn.n',
+    '.nfnfnfnfnfn.',
+    '..nnnnnnnnn..',
+  ],
   groundDirt: [
     '.d.',
     'ddd',

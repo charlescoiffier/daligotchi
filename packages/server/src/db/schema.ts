@@ -1,15 +1,19 @@
 import type { Form, Needs, Species } from '@daligotchi/core';
 import { sql } from 'drizzle-orm';
 import {
+  type AnyPgColumn,
   bigint,
+  boolean,
   check,
   doublePrecision,
   index,
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   text,
   timestamp,
+  unique,
   uuid,
 } from 'drizzle-orm/pg-core';
 
@@ -78,15 +82,58 @@ export const animals = pgTable(
     ageMs: doublePrecision('age_ms').notNull(),
     lifespanMs: doublePrecision('lifespan_ms').notNull(),
     at: worldTime('at').notNull(),
+    /** Parents (null pour un fondateur sans ascendants connus). */
+    parentAId: uuid('parent_a_id').references((): AnyPgColumn => animals.id),
+    parentBId: uuid('parent_b_id').references((): AnyPgColumn => animals.id),
+    /** Description rédigée par ses humains, visible dans la généalogie (GDD §7). */
+    description: text('description').notNull().default(''),
+    /** Dernière ponte, tous partenaires confondus (récupération de deux semaines). */
+    lastClutchAt: worldTime('last_clutch_at'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('animals_household_idx').on(table.householdId)],
 );
 
-export type EggStatus = 'available' | 'incubating' | 'hatched' | 'removed';
+/**
+ * Jauge d'interaction d'une paire d'animaux (GDD §8), instantané à l'instant `at`.
+ * Les identifiants sont rangés : animal_a < animal_b.
+ */
+export const pairs = pgTable(
+  'pairs',
+  {
+    animalA: uuid('animal_a').notNull().references(() => animals.id),
+    animalB: uuid('animal_b').notNull().references(() => animals.id),
+    interaction: doublePrecision('interaction').notNull(),
+    at: worldTime('at').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.animalA, table.animalB] }),
+    check('pairs_ordered', sql`${table.animalA} < ${table.animalB}`),
+  ],
+);
+
+/** Pontes : une ligne par ponte, numérotée par paire. L'unicité empêche toute ponte en double. */
+export const clutches = pgTable(
+  'clutches',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    animalA: uuid('animal_a').notNull().references(() => animals.id),
+    animalB: uuid('animal_b').notNull().references(() => animals.id),
+    number: integer('number').notNull(),
+    householdId: uuid('household_id').notNull().references(() => households.id),
+    laidAt: worldTime('laid_at').notNull(),
+    eggCount: integer('egg_count').notNull(),
+    /** Le joueur a-t-il déjà vu l'annonce de cette ponte ? */
+    seen: boolean('seen').notNull().default(false),
+  },
+  (table) => [unique('clutches_pair_number').on(table.animalA, table.animalB, table.number)],
+);
+
+export type EggStatus = 'nest' | 'available' | 'incubating' | 'hatched' | 'removed';
 
 /**
- * Œuf : au lieu d'adoption (`available`, sans foyer), en incubation dans un foyer,
+ * Œuf : au nid après une ponte (`nest`, hors des six places), au lieu d'adoption
+ * (`available`, sans foyer), en incubation dans un foyer,
  * éclos (il reste pour la généalogie) ou retiré. L'espèce est tirée une seule fois,
  * à la création, et n'est jamais montrée avant l'éclosion.
  */
@@ -104,8 +151,11 @@ export const eggs = pgTable(
     cleanliness: doublePrecision('cleanliness').notNull(),
     progress: doublePrecision('progress').notNull(),
     at: worldTime('at').notNull(),
-    /** Arrivée au lieu d'adoption (pour retirer les plus anciens). */
+    /** Arrivée à sa place actuelle : au nid (dépôt automatique après 7 jours) ou au lieu d'adoption. */
     listedAt: worldTime('listed_at').notNull(),
+    parentAId: uuid('parent_a_id').references(() => animals.id),
+    parentBId: uuid('parent_b_id').references(() => animals.id),
+    clutchId: uuid('clutch_id').references(() => clutches.id),
     hatchedAnimalId: uuid('hatched_animal_id').references(() => animals.id),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -114,8 +164,8 @@ export const eggs = pgTable(
     index('eggs_household_idx').on(table.householdId),
     check(
       'eggs_status_household',
-      sql`${table.status} in ('available', 'incubating', 'hatched', 'removed')
-        and (${table.status} <> 'incubating' or ${table.householdId} is not null)
+      sql`${table.status} in ('nest', 'available', 'incubating', 'hatched', 'removed')
+        and (${table.status} not in ('incubating', 'nest') or ${table.householdId} is not null)
         and (${table.status} <> 'available' or ${table.householdId} is null)`,
     ),
   ],

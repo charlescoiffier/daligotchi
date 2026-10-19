@@ -98,6 +98,30 @@ export const BALANCE = {
     removeAboveFactor: 2,
   },
 
+  /**
+   * Liens entre animaux (GDD §8). Chaque paire a une jauge d'interaction de 0 à 100.
+   * Au-delà de `loveThreshold`, c'est de l'amour. Ensemble dans un foyer, elle monte de
+   * `togetherPerHour` (≈ 3 jours pour tomber amoureux) ; séparés, elle baisse lentement.
+   */
+  bonds: {
+    loveThreshold: 80,
+    closeFrom: 50,
+    friendFrom: 25,
+    togetherPerHour: 1.2,
+    apartPerHour: 0.12,
+    /** Lancer la balle à tout le foyer rapproche chaque paire. */
+    ballForAllBoost: 4,
+    /** Proposition (GDD « à définir ») : après une ponte, l'amour retombe juste sous le seuil. */
+    afterClutchInteraction: 70,
+  },
+
+  /** Taille d'une ponte : 1 à 3 œufs, plus souvent 1 (probabilités cumulées). */
+  clutchSizeChances: [
+    [1, 0.6],
+    [2, 0.3],
+    [3, 0.1],
+  ] as readonly (readonly [number, number])[],
+
   /** Œuf du nid déposé automatiquement au lieu d'adoption. */
   nestAutoDepositAfter: 7 * DAY,
 

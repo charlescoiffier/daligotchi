@@ -1,5 +1,7 @@
 export * from './animal.ts';
 export * from './balance.ts';
+export * from './bonds.ts';
+export * from './breeding.ts';
 export * from './clock.ts';
 export * from './genetics.ts';
 export * from './i18n/index.ts';

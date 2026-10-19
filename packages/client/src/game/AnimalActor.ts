@@ -33,6 +33,8 @@ export class AnimalActor {
   private marker?: Phaser.GameObjects.Image;
   private behaviourTimer?: Phaser.Time.TimerEvent;
   private moveTween?: Phaser.Tweens.Tween;
+  /** Les amoureux font apparaître un petit cœur de temps en temps. */
+  private loveTimer?: Phaser.Time.TimerEvent;
   private hopTween?: Phaser.Tweens.Tween;
 
   constructor(
@@ -121,13 +123,26 @@ export class AnimalActor {
 
   destroy() {
     this.behaviourTimer?.remove();
+    this.loveTimer?.remove();
     this.moveTween?.stop();
     this.hopTween?.stop();
     this.container.destroy();
   }
 
-  /** Taches de saleté selon la propreté. */
+  /** Taches de saleté selon la propreté, et petits cœurs des amoureux. */
   private refreshLook() {
+    const inLove = this.animal.bonds.some((bond) => bond.level === 'love' || bond.level === 'inseparable');
+    if (inLove && !this.loveTimer) {
+      this.loveTimer = this.scene.time.addEvent({
+        delay: Phaser.Math.Between(7000, 11000),
+        loop: true,
+        callback: () => this.floatUp('heart', this.x + Phaser.Math.Between(-4, 4), this.top - 2, 1500, 10),
+      });
+    } else if (!inLove && this.loveTimer) {
+      this.loveTimer.remove();
+      this.loveTimer = undefined;
+    }
+
     const level = this.animal.description.needs.hygiene.split('.').pop();
     const visible = level === 'bad' ? 4 : level === 'low' ? 2 : 0;
     this.specks.forEach((speck, index) => speck.setVisible(index < visible));

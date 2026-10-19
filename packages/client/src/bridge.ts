@@ -9,6 +9,8 @@ interface BridgeEvents {
   'animal-selected': { id: string };
   /** Un œuf a été touché dans l'habitat. */
   'egg-selected': { id: string };
+  /** Le nid a été touché dans l'habitat. */
+  'nest-selected': Record<string, never>;
   /** La fiche a été fermée : l'habitat retire le marqueur. */
   'animal-deselected': Record<string, never>;
   /** Un soin a été accepté par le serveur : l'habitat joue l'effet correspondant. */

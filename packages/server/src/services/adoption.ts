@@ -1,6 +1,7 @@
 import {
   BALANCE,
   defaultRandom,
+  type Form,
   newEgg,
   type Random,
   randomFounderGenotype,
@@ -8,14 +9,10 @@ import {
 } from '@daligotchi/core';
 import { and, asc, count, eq, gte, inArray, sql } from 'drizzle-orm';
 import type { Database } from '../db/client.ts';
-import { eggs, players } from '../db/schema.ts';
-import { lockHousehold, type Tx, usedSlots } from './households.ts';
+import { animals, eggs, players } from '../db/schema.ts';
+import { lockHousehold, NoFreeSlotError, type Tx, usedSlots } from './households.ts';
 
-export class NoFreeSlotError extends Error {
-  constructor() {
-    super('Le foyer est plein');
-  }
-}
+export { NoFreeSlotError };
 
 export class EggUnavailableError extends Error {
   constructor() {
@@ -23,10 +20,11 @@ export class EggUnavailableError extends Error {
   }
 }
 
-/** Œuf tel que présenté au lieu d'adoption : jamais son espèce. */
+/** Œuf tel que présenté au lieu d'adoption : jamais son espèce, mais ses parents s'il en a. */
 export interface AdoptionEgg {
   id: string;
   origin: 'game' | 'player';
+  parents: { id: string; name: string; form: Form }[];
 }
 
 type Executor = Database['db'] | Tx;
@@ -53,11 +51,22 @@ export async function createGameEgg(db: Executor, worldNow: number, random: Rand
 }
 
 export async function listAvailableEggs({ db }: Database): Promise<AdoptionEgg[]> {
-  return db
-    .select({ id: eggs.id, origin: eggs.origin })
+  const rows = await db
+    .select({ id: eggs.id, origin: eggs.origin, parentAId: eggs.parentAId, parentBId: eggs.parentBId })
     .from(eggs)
     .where(eq(eggs.status, 'available'))
     .orderBy(asc(eggs.listedAt), asc(eggs.id));
+  const parentIds = [...new Set(rows.flatMap((row) => [row.parentAId, row.parentBId]).filter((id): id is string => !!id))];
+  const parents =
+    parentIds.length === 0
+      ? []
+      : await db.select({ id: animals.id, name: animals.name, form: animals.form }).from(animals).where(inArray(animals.id, parentIds));
+  const byId = new Map(parents.map((parent) => [parent.id, parent]));
+  return rows.map((row) => ({
+    id: row.id,
+    origin: row.origin,
+    parents: [row.parentAId, row.parentBId].flatMap((id) => (id && byId.has(id) ? [byId.get(id)!] : [])),
+  }));
 }
 
 /**

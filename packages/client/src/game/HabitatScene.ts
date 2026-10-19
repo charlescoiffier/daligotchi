@@ -7,6 +7,7 @@ import { EggActor } from './EggActor.ts';
 import {
   FOOD_BOWL,
   HABITAT_HEIGHT,
+  NEST,
   HABITAT_WIDTH,
   HORIZON_Y,
   SLOT_POSITIONS,
@@ -31,6 +32,7 @@ export class HabitatScene extends Phaser.Scene {
   private foodBowl?: Phaser.GameObjects.Image;
   private waterBowl?: Phaser.GameObjects.Image;
   private groundDirt: Phaser.GameObjects.Image[] = [];
+  private nest?: Phaser.GameObjects.Image;
 
   constructor() {
     super('habitat');
@@ -59,6 +61,13 @@ export class HabitatScene extends Phaser.Scene {
     this.startClouds();
     this.foodBowl = this.add.image(FOOD_BOWL.x, FOOD_BOWL.y, 'bowlEmpty').setOrigin(0.5, 1).setDepth(FOOD_BOWL.y);
     this.waterBowl = this.add.image(WATER_BOWL.x, WATER_BOWL.y, 'bowlEmpty').setOrigin(0.5, 1).setDepth(WATER_BOWL.y);
+    this.nest = this.add.image(NEST.x, NEST.y, 'nest1').setOrigin(0.5, 1).setDepth(NEST.y).setVisible(false);
+    this.nest.setInteractive({
+      hitArea: new Phaser.Geom.Rectangle(-4, -6, this.nest.width + 8, this.nest.height + 10),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      useHandCursor: true,
+    });
+    this.nest.on('pointerdown', () => bridge.emit('nest-selected', {}));
 
     this.renderHousehold(this.registry.get(HOUSEHOLD_KEY) as Household | undefined);
     this.registry.events.on(`changedata-${HOUSEHOLD_KEY}`, (_: unknown, household: Household) =>
@@ -130,6 +139,10 @@ export class HabitatScene extends Phaser.Scene {
     this.waterBowl?.setTexture(all('hydration') ? 'bowlWater' : 'bowlEmpty');
 
     this.showGroundDirt(household.home.split('.').pop() as 'good' | 'low' | 'bad');
+
+    const nestCount = household.nest.length;
+    this.nest?.setVisible(nestCount > 0);
+    if (nestCount > 0) this.nest?.setTexture(`nest${Math.min(3, nestCount)}`);
   }
 
   private addAnimal(animal: HouseholdAnimal, home: readonly [number, number]) {

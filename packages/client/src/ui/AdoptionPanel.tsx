@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'preact/hooks';
 import { type AdoptionEgg, api, type Household } from '../api/client.ts';
 import { t } from '../i18n/index.ts';
+import { joinNames } from './names.ts';
 
 interface AdoptionPanelProps {
   household: Household;
   busy: boolean;
   onAdopt: (eggId: string) => void;
+  /** Consulter l'ascendance d'un œuf pondu par des animaux de joueurs. */
+  onAncestry: (parentIds: string[]) => void;
   onClose: () => void;
 }
 
 /** Lieu d'adoption : œufs disponibles, sans jamais révéler leur espèce (GDD §10). */
-export function AdoptionPanel({ household, busy, onAdopt, onClose }: AdoptionPanelProps) {
+export function AdoptionPanel({ household, busy, onAdopt, onAncestry, onClose }: AdoptionPanelProps) {
   const [eggs, setEggs] = useState<AdoptionEgg[] | null>(null);
   const full = household.slots.used >= household.slots.total;
 
@@ -36,16 +39,31 @@ export function AdoptionPanel({ household, busy, onAdopt, onClose }: AdoptionPan
           <li key={egg.id} class="adoption__egg">
             <div>
               <strong>{t('adoption.egg', { number: index + 1 })}</strong>
-              <span>{t('adoption.founder')}</span>
+              <span>
+                {egg.parents.length > 0
+                  ? t('nest.egg', { parents: joinNames(egg.parents.map((p) => p.name)) })
+                  : t('adoption.founder')}
+              </span>
             </div>
-            <button
-              type="button"
-              class="button button--action"
-              disabled={busy || full}
-              onClick={() => onAdopt(egg.id)}
-            >
-              {t('adoption.adopt')}
-            </button>
+            <div class="adoption__actions">
+              {egg.parents.length > 0 && (
+                <button
+                  type="button"
+                  class="button button--small"
+                  onClick={() => onAncestry(egg.parents.map((p) => p.id))}
+                >
+                  {t('adoption.ancestry')}
+                </button>
+              )}
+              <button
+                type="button"
+                class="button button--action"
+                disabled={busy || full}
+                onClick={() => onAdopt(egg.id)}
+              >
+                {t('adoption.adopt')}
+              </button>
+            </div>
           </li>
         ))}
       </ul>

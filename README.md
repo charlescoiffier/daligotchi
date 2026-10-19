@@ -17,7 +17,7 @@ On adopte des œufs, on les couve jusqu'à l'éclosion, puis on prend soin d'ani
 
 Les enfants imaginent les règles, dessinent les animaux dans [Piskel](https://www.piskelapp.com/) et testent le jeu ; les parents décident ; le code est écrit avec [Claude Code](https://claude.com/claude-code).
 
-Les règles du jeu sont décrites dans le [Game Design Document](outputs/Daligotchi-GDD-v0.3.md), l'architecture dans le [plan technique](outputs/Daligotchi-Plan-technique-PVJ-v0.2.md).
+Les règles du jeu sont décrites dans le [Game Design Document](outputs/Daligotchi-GDD-v0.3.md), l'architecture dans le [plan technique](outputs/Daligotchi-Plan-technique-PVJ-v0.3.md).
 
 ## Avancement de la première version jouable
 
@@ -29,7 +29,7 @@ Les règles du jeu sont décrites dans le [Game Design Document](outputs/Daligot
 | 3 | Soins, décor, comportements des animaux | ✅ |
 | 4 | Œufs, incubation, éclosion, lieu d'adoption | ✅ |
 | 5 | Mise en ligne de test | ✅ |
-| 6 | Relations : amour, pontes, nid, généalogie | |
+| 6 | Relations : amour, pontes, nid, généalogie | ✅ |
 | 7 | Rencontres entre joueurs | |
 | 8 | Fin de vie | |
 | 9 | Finitions : application installable, musiques et sons | |

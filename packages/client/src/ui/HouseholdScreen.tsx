@@ -8,6 +8,9 @@ import { ActionsPanel } from './ActionsPanel.tsx';
 import { AdoptionPanel } from './AdoptionPanel.tsx';
 import { AnimalCard } from './AnimalCard.tsx';
 import { EggCard } from './EggCard.tsx';
+import { GenealogyPanel, type GenealogyTarget } from './GenealogyPanel.tsx';
+import { joinNames } from './names.ts';
+import { NestPanel } from './NestPanel.tsx';
 
 const TOAST_DURATION_MS = 3000;
 /** Rafraîchissement régulier du foyer (besoins, éclosions) tant que le jeu est ouvert. */
@@ -16,7 +19,7 @@ const REFRESH_INTERVAL_MS = 2 * 60 * 1000;
 type Selection = { kind: 'animal'; id: string } | { kind: 'egg'; id: string } | null;
 /** Action choisie avant la cible : il reste à toucher un animal ou un œuf. */
 type Pending = { kind: 'animal'; action: AnimalAction } | { kind: 'egg'; action: EggAction } | null;
-type Panel = 'actions' | 'adoption' | null;
+type Panel = 'actions' | 'adoption' | 'nest' | 'genealogy' | null;
 
 interface HouseholdScreenProps {
   player: Player;
@@ -31,6 +34,7 @@ export function HouseholdScreen({ player, onLogout }: HouseholdScreenProps) {
   const [pending, setPending] = useState<Pending>(null);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [genealogy, setGenealogy] = useState<GenealogyTarget | null>(null);
 
   const game = useRef<GameHandle | null>(null);
   const pendingRef = useRef<Pending>(null);
@@ -46,9 +50,37 @@ export function HouseholdScreen({ player, onLogout }: HouseholdScreenProps) {
   function updateHousehold(data: Household) {
     setHousehold(data);
     game.current?.setHousehold(data);
+    for (const clutch of data.newClutches) {
+      const parents = joinNames(clutch.parents);
+      showToast(
+        clutch.eggCount === 1
+          ? t('clutch.laidOne', { parents })
+          : t('clutch.laidMany', { parents, count: clutch.eggCount }),
+      );
+    }
     for (const hatching of data.hatched) {
       const form = t(`form.${hatching.form}` as MessageKey).toLowerCase();
       showToast(t('hatch.born', { name: hatching.name, form }));
+    }
+  }
+
+  function openGenealogy(target: GenealogyTarget) {
+    setGenealogy(target);
+    setPanel('genealogy');
+  }
+
+  async function placeNestEgg(eggId: string, choice: 'keep' | 'deposit') {
+    setBusy(true);
+    try {
+      const data = await api.nest(eggId, choice);
+      updateHousehold(data);
+      showToast(t(choice === 'keep' ? 'nest.kept' : 'nest.deposited'));
+      if (data.nest.length === 0) setPanel(null);
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'no_free_slot') showToast(t('adoption.full', household?.slots ?? {}));
+      else handleError(e);
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -100,9 +132,9 @@ export function HouseholdScreen({ player, onLogout }: HouseholdScreenProps) {
     }
   }
 
-  async function rename(animalId: string, name: string) {
+  async function updateAnimal(animalId: string, changes: { name?: string; description?: string }) {
     try {
-      await api.rename(animalId, name);
+      await api.updateAnimal(animalId, changes);
       updateHousehold(await api.household());
       return true;
     } catch {
@@ -128,6 +160,7 @@ export function HouseholdScreen({ player, onLogout }: HouseholdScreenProps) {
     };
     const offAnimal = bridge.on('animal-selected', ({ id }) => onTargetSelected('animal', id));
     const offEgg = bridge.on('egg-selected', ({ id }) => onTargetSelected('egg', id));
+    const offNest = bridge.on('nest-selected', () => setPanel('nest'));
 
     // Chaque chargement est une visite : au retour sur l'onglet, et régulièrement.
     const load = () =>
@@ -150,6 +183,7 @@ export function HouseholdScreen({ player, onLogout }: HouseholdScreenProps) {
       clearTimeout(toastTimer.current);
       offAnimal();
       offEgg();
+      offNest();
       game.current?.destroy();
       game.current = null;
     };
@@ -194,7 +228,9 @@ export function HouseholdScreen({ player, onLogout }: HouseholdScreenProps) {
             animal={selectedAnimal}
             busy={busy}
             onAction={(action) => care({ action, animalId: selectedAnimal.id })}
-            onRename={(name) => rename(selectedAnimal.id, name)}
+            onRename={(name) => updateAnimal(selectedAnimal.id, { name })}
+            onSaveStory={(description) => updateAnimal(selectedAnimal.id, { description })}
+            onGenealogy={() => openGenealogy({ kind: 'animal', id: selectedAnimal.id, name: selectedAnimal.name })}
             onClose={closeCard}
           />
         )}
@@ -256,10 +292,32 @@ export function HouseholdScreen({ player, onLogout }: HouseholdScreenProps) {
           />
         )}
         {panel === 'adoption' && household && (
-          <AdoptionPanel household={household} busy={busy} onAdopt={adopt} onClose={() => setPanel(null)} />
+          <AdoptionPanel
+            household={household}
+            busy={busy}
+            onAdopt={adopt}
+            onAncestry={(parentIds) => openGenealogy({ kind: 'egg', parentIds })}
+            onClose={() => setPanel(null)}
+          />
         )}
+        {panel === 'nest' && household && (
+          <NestPanel
+            nest={household.nest}
+            full={household.slots.used >= household.slots.total}
+            busy={busy}
+            onKeep={(eggId) => placeNestEgg(eggId, 'keep')}
+            onDeposit={(eggId) => placeNestEgg(eggId, 'deposit')}
+            onClose={() => setPanel(null)}
+          />
+        )}
+        {panel === 'genealogy' && genealogy && <GenealogyPanel target={genealogy} onClose={() => setPanel(null)} />}
         {!panel && !pending && (
           <div class="bottom-bar__buttons">
+            {household && household.nest.length > 0 && (
+              <button type="button" class="button button--secondary" onClick={() => setPanel('nest')}>
+                {t('nest.button', { count: household.nest.length })}
+              </button>
+            )}
             <button
               type="button"
               class="button button--secondary"

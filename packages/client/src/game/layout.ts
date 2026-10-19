@@ -25,6 +25,9 @@ export const SLOT_POSITIONS = [
 export const FOOD_BOWL = { x: 92, y: 112 } as const;
 export const WATER_BOWL = { x: 105, y: 112 } as const;
 
+/** Nid des œufs pondus, à gauche près de l'horizon (visible seulement s'il contient des œufs). */
+export const NEST = { x: 14, y: 112 } as const;
+
 export function clampToWalkArea(x: number, y: number): [number, number] {
   return [
     Math.min(WALK_AREA.maxX, Math.max(WALK_AREA.minX, x)),
