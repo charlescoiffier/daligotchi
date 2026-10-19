@@ -324,8 +324,13 @@ export async function syncHousehold(
   // Noms des animaux des autres foyers avec qui un lien existe.
   const crossIds = crossPairs.map((pair) => (ids.includes(pair.animalA) ? pair.animalB : pair.animalA));
   if (crossIds.length > 0) {
-    for (const row of await tx.select({ id: animals.id, name: animals.name }).from(animals).where(inArray(animals.id, crossIds))) {
+    const crossRows = await tx
+      .select({ id: animals.id, name: animals.name, ageMs: animals.ageMs })
+      .from(animals)
+      .where(inArray(animals.id, crossIds));
+    for (const row of crossRows) {
       nameById.set(row.id, row.name);
+      stageById.set(row.id, stageOf(row.ageMs));
     }
   }
   const crossStates: PairState[] = crossPairs.map((pair) => ({

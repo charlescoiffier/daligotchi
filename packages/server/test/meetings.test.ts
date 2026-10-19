@@ -169,6 +169,10 @@ describe('scène de rencontre', () => {
     const { outcome } = (await call(f.bob.cookie, 'POST', `/meetings/${id}/finish`, { interactions: tenInteractions })).json();
     expect(outcome.level).toBe('love');
     expect(outcome.eggCount).toBeGreaterThan(0);
+    // La fiche de Roux montre son lien avec Bulle, qui vit chez Bob (deux adultes : pas « inséparables »).
+    const roux = (await call(f.alice.cookie, 'GET', '/household')).json().animals[0];
+    expect(roux.bonds[0]).toMatchObject({ name: 'Bulle' });
+    expect(roux.bonds[0].level).not.toBe('inseparable');
     const laid = await ctx.database.db
       .select()
       .from(eggs)

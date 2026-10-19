@@ -403,7 +403,7 @@ Chaque étape se termine par quelque chose de jouable ou de vérifiable par la f
 | **4. Œufs et adoption** | Lieu d'adoption, incubation, éclosion, six places, tâche de réapprovisionnement | Adopter un œuf et le voir éclore | ✅ fait |
 | **5. Mise en ligne de test** | Déploiement sur le VPS en vitesse accélérée, sauvegardes | La famille joue depuis ses téléphones | ✅ fait |
 | **6. Relations** | Interaction et amour au foyer, ponte, nid, attribution, dépôt après 7 jours, généalogie | Premiers bébés et premier arbre | ✅ fait |
-| **7. Rencontres** | Amis, invitations, lieu de rencontre, scène courte, souvenir, phrases prédéfinies | Rencontres entre joueurs | |
+| **7. Rencontres** | Amis, invitations, lieu de rencontre, scène courte, souvenir, phrases prédéfinies | Rencontres entre joueurs | ✅ fait |
 | **8. Fin de vie** | Grand âge, vieillissement ralenti, scène d'adieu | Cycle de vie complet | |
 | **9. Finitions PVJ** | PWA installable, musiques et effets sonores, réglages d'équilibrage, production à vitesse ×1 | Ouverture aux amis | |
 
@@ -412,6 +412,7 @@ Chaque étape se termine par quelque chose de jouable ou de vérifiable par la f
 - **Adresse de production** (×1) : même sous-domaine ou second sous-domaine.
 - **Sauvegardes** de la base, avant le passage à ×1.
 - **Évolution de l'amour après une ponte** : la proposition actuelle (retour à 70) est à valider en famille.
+- **Nid partagé** (GDD §6) : pour la PVJ, les œufs d'une ponte entre animaux de deux joueurs sont répartis entre les nids des deux propriétaires, chacun décidant seul des siens ; la décision commune est à reprendre avec les animaux partagés.
 - **Valeurs d'équilibrage** dans `balance.ts`, à ajuster après les essais familiaux.
 - **Affichage sur ordinateur** : l'habitat reste une colonne au format téléphone.
 - **Actions GitHub** du modèle vps-infra en Node 20 (déprécié) : à mettre à jour dans `vps-infra`.

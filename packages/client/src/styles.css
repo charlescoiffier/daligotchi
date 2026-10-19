@@ -353,8 +353,20 @@ body {
 
 .bottom-bar__buttons {
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
   align-items: center;
+  max-width: 100%;
+}
+
+/* Sur téléphone, les boutons du bas se resserrent pour tenir sur une ligne. */
+@media (max-width: 420px) {
+  .bottom-bar__buttons .button--secondary,
+  .bottom-bar__buttons .button--primary {
+    font-size: 0.9rem;
+    padding: 10px 12px;
+  }
 }
 
 .button--secondary {
