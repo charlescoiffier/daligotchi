@@ -115,6 +115,21 @@ export const BALANCE = {
     afterClutchInteraction: 70,
   },
 
+  /**
+   * Rencontres entre joueurs (GDD §9). Chaque rencontre rapproche la paire de `baseBoost`,
+   * plus `perInteraction` par caresse ou balle (au plus `maxInteractions` comptées) :
+   * une rencontre très réussie peut franchir le seuil d'amour d'un coup.
+   * Les durées sont en temps réel (ce sont des humains qui se répondent).
+   */
+  meetings: {
+    baseBoost: 20,
+    perInteraction: 6,
+    maxInteractions: 10,
+    invitationExpiryMs: 2 * DAY,
+    sceneTimeoutMs: 15 * 60_000,
+    maxPendingPerAnimal: 3,
+  },
+
   /** Taille d'une ponte : 1 à 3 œufs, plus souvent 1 (probabilités cumulées). */
   clutchSizeChances: [
     [1, 0.6],

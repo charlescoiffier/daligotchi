@@ -1,4 +1,4 @@
-import type { Form, Needs, Species } from '@daligotchi/core';
+import type { Form, MeetingInteraction, Needs, Species } from '@daligotchi/core';
 import { sql } from 'drizzle-orm';
 import {
   type AnyPgColumn,
@@ -170,3 +170,62 @@ export const eggs = pgTable(
     ),
   ],
 );
+
+/** Amitiés entre joueurs (identifiants rangés : player_a < player_b). */
+export const friendships = pgTable(
+  'friendships',
+  {
+    playerA: uuid('player_a').notNull().references(() => players.id, { onDelete: 'cascade' }),
+    playerB: uuid('player_b').notNull().references(() => players.id, { onDelete: 'cascade' }),
+    requestedBy: uuid('requested_by').notNull().references(() => players.id, { onDelete: 'cascade' }),
+    status: text('status').$type<'pending' | 'accepted'>().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.playerA, table.playerB] }),
+    check('friendships_ordered', sql`${table.playerA} < ${table.playerB}`),
+  ],
+);
+
+/** Animaux inscrits volontairement au lieu de rencontre (GDD §9). */
+export const meetingListings = pgTable('meeting_listings', {
+  animalId: uuid('animal_id').primaryKey().references(() => animals.id),
+  listedAt: timestamp('listed_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type MeetingStatus = 'pending' | 'playing' | 'done' | 'declined' | 'expired';
+
+/**
+ * Rencontre : invitation, puis scène jouée par l'invité. Les effets sont appliqués une seule
+ * fois (`effects_applied_at`) ; l'invitant revoit ensuite la scène comme un souvenir.
+ * Les dates sont réelles : ce sont des humains qui se répondent.
+ */
+export const meetings = pgTable(
+  'meetings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    inviterId: uuid('inviter_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+    inviteeId: uuid('invitee_id').notNull().references(() => players.id, { onDelete: 'cascade' }),
+    inviterAnimalId: uuid('inviter_animal_id').notNull().references(() => animals.id),
+    inviteeAnimalId: uuid('invitee_animal_id').notNull().references(() => animals.id),
+    phrase: text('phrase').notNull(),
+    status: text('status').$type<MeetingStatus>().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    startedAt: timestamp('started_at', { withTimezone: true }),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+    interactions: jsonb('interactions').$type<MeetingInteraction[]>().notNull().default([]),
+    outcome: jsonb('outcome').$type<MeetingOutcome>(),
+    effectsAppliedAt: timestamp('effects_applied_at', { withTimezone: true }),
+    inviterSeen: boolean('inviter_seen').notNull().default(false),
+  },
+  (table) => [
+    index('meetings_invitee_idx').on(table.inviteeId, table.status),
+    index('meetings_inviter_idx').on(table.inviterId, table.status),
+  ],
+);
+
+/** Résultat d'une rencontre, montré à l'invité puis dans le souvenir. */
+export interface MeetingOutcome {
+  level: 'love' | 'inseparable' | 'close' | 'friend' | 'none';
+  eggCount: number;
+}

@@ -4,6 +4,7 @@ import {
   advanceBonds,
   advanceEgg,
   advanceHousehold,
+  apartInteraction,
   applyCare,
   applyEggCare,
   areRelated,
@@ -12,7 +13,6 @@ import {
   bondLevel,
   boostBonds,
   canLay,
-  clutchSize,
   DAY,
   describeAnimal,
   describeEgg,
@@ -20,22 +20,20 @@ import {
   type EggDescription,
   type Form,
   type HouseholdState,
-  inherit,
   isReadyToHatch,
   type MessageKey,
   newbornAnimal,
   newbornName,
-  newEgg,
   type PairContext,
   type PairState,
   pairKey,
   type Random,
   type Stage,
   stageOf,
-  visibleForm,
 } from '@daligotchi/core';
-import { and, asc, count, eq, inArray, lte } from 'drizzle-orm';
-import { animals, clutches, eggs, households, pairs } from '../db/schema.ts';
+import { and, asc, eq, inArray, lte, notInArray, or } from 'drizzle-orm';
+import { animals, clutches, eggs, households, meetings, pairs, players } from '../db/schema.ts';
+import { layClutch, previousClutchPending } from './clutch.ts';
 import type { CareRequest, Tx } from './households.ts';
 
 /** Ce que le jeu reçoit : des libellés et des formes visibles, jamais les allèles ni les nombres. */
@@ -52,6 +50,8 @@ export interface HouseholdView {
     /** Texte rédigé par ses humains (généalogie). */
     story: string;
     bonds: { animalId: string; name: string; level: BondLevel | 'inseparable' }[];
+    /** Pseudo du joueur chez qui l'animal est en visite (scène de rencontre en cours). */
+    visitingHost?: string;
   }[];
   /** Œufs en incubation : leur espèce reste secrète jusqu'à l'éclosion. */
   eggs: { id: string; description: EggDescription }[];
@@ -140,7 +140,26 @@ export async function syncHousehold(
     together: true,
     allowed: !areRelated(kinById.get(pair.a)!, kinById.get(pair.b)!),
   });
-  pairStates = advanceBonds(pairStates, worldNow, contextOf);
+  // Liens avec des animaux d'autres foyers (rencontres) : ils comptent pour l'exclusivité.
+  const crossPairs =
+    ids.length === 0
+      ? []
+      : await tx
+          .select()
+          .from(pairs)
+          .where(
+            or(
+              and(inArray(pairs.animalA, ids), notInArray(pairs.animalB, ids)),
+              and(notInArray(pairs.animalA, ids), inArray(pairs.animalB, ids)),
+            ),
+          );
+  const lovedElsewhere = new Set<string>();
+  for (const pair of crossPairs) {
+    if (apartInteraction({ a: pair.animalA, b: pair.animalB, interaction: pair.interaction, at: pair.at }, worldNow) >= BALANCE.bonds.loveThreshold) {
+      lovedElsewhere.add(ids.includes(pair.animalA) ? pair.animalA : pair.animalB);
+    }
+  }
+  pairStates = advanceBonds(pairStates, worldNow, contextOf, lovedElsewhere);
 
   // --- Soin ---
   if (care && isEggCare(care)) {
@@ -152,7 +171,7 @@ export async function syncHousehold(
     const index = animalId ? animalRows.findIndex((row) => row.id === animalId) : undefined;
     if (index === -1) throw new TargetNotFoundError(animalId!);
     after = applyCare(after, care.action, index);
-    if (care.action === 'ball' && index === undefined) pairStates = boostBonds(pairStates, contextOf);
+    if (care.action === 'ball' && index === undefined) pairStates = boostBonds(pairStates, contextOf, lovedElsewhere);
   }
 
   // --- Pontes (GDD §8) ---
@@ -160,48 +179,20 @@ export async function syncHousehold(
   const stageById = new Map(animalRows.map((row, i) => [row.id, stageOf(after.animals[i]!.ageMs)]));
   const rowById = new Map(animalRows.map((row) => [row.id, row]));
   for (const [index, pair] of pairStates.entries()) {
-    const [pending] = await tx
-      .select({ n: count() })
-      .from(eggs)
-      .where(and(eq(eggs.status, 'nest'), eq(eggs.parentAId, pair.a), eq(eggs.parentBId, pair.b)));
     const parent = (id: string) => ({ stage: stageById.get(id)!, lastClutchAt: lastClutchAt.get(id) ?? null });
     const allowed = canLay(pair, parent(pair.a), parent(pair.b), worldNow, {
       related: !contextOf(pair).allowed,
-      previousClutchPending: (pending?.n ?? 0) > 0,
+      previousClutchPending: await previousClutchPending(tx, pair),
     });
     if (!allowed) continue;
-
-    const [previous] = await tx
-      .select({ n: count() })
-      .from(clutches)
-      .where(and(eq(clutches.animalA, pair.a), eq(clutches.animalB, pair.b)));
-    const eggCount = clutchSize(random);
-    const [clutch] = await tx
-      .insert(clutches)
-      .values({
-        animalA: pair.a,
-        animalB: pair.b,
-        number: (previous?.n ?? 0) + 1,
-        householdId: householdRow.id,
-        laidAt: worldNow,
-        eggCount,
-      })
-      .returning({ id: clutches.id });
-    for (let e = 0; e < eggCount; e++) {
-      const genotype = inherit(rowById.get(pair.a)!.genotype, rowById.get(pair.b)!.genotype, random);
-      await tx.insert(eggs).values({
-        status: 'nest',
-        origin: 'player',
-        householdId: householdRow.id,
-        genotype,
-        form: visibleForm(genotype),
-        ...newEgg(worldNow),
-        listedAt: worldNow,
-        parentAId: pair.a,
-        parentBId: pair.b,
-        clutchId: clutch!.id,
-      });
-    }
+    await layClutch(tx, {
+      pair,
+      parentA: rowById.get(pair.a)!,
+      parentB: rowById.get(pair.b)!,
+      nests: [householdRow.id],
+      worldNow,
+      random,
+    });
     lastClutchAt.set(pair.a, worldNow).set(pair.b, worldNow);
     pairStates[index] = { ...pair, interaction: BALANCE.bonds.afterClutchInteraction };
   }
@@ -330,8 +321,32 @@ export async function syncHousehold(
   }
 
   // --- Vue ---
+  // Noms des animaux des autres foyers avec qui un lien existe.
+  const crossIds = crossPairs.map((pair) => (ids.includes(pair.animalA) ? pair.animalB : pair.animalA));
+  if (crossIds.length > 0) {
+    for (const row of await tx.select({ id: animals.id, name: animals.name }).from(animals).where(inArray(animals.id, crossIds))) {
+      nameById.set(row.id, row.name);
+    }
+  }
+  const crossStates: PairState[] = crossPairs.map((pair) => ({
+    a: pair.animalA,
+    b: pair.animalB,
+    interaction: apartInteraction({ a: pair.animalA, b: pair.animalB, interaction: pair.interaction, at: pair.at }, worldNow),
+    at: worldNow,
+  }));
+  // Animaux partis en visite le temps d'une scène de rencontre (GDD §9).
+  const visits =
+    ids.length === 0
+      ? []
+      : await tx
+          .select({ animalId: meetings.inviterAnimalId, host: players.pseudo })
+          .from(meetings)
+          .innerJoin(players, eq(players.id, meetings.inviteeId))
+          .where(and(eq(meetings.status, 'playing'), inArray(meetings.inviterAnimalId, ids)));
+  const visitingHost = new Map(visits.map((v) => [v.animalId, v.host]));
+
   const bondsOf = (id: string): HouseholdView['animals'][number]['bonds'] =>
-    pairStates
+    [...pairStates, ...crossStates]
       .filter((pair) => pair.a === id || pair.b === id)
       .map((pair) => {
         const other = pair.a === id ? pair.b : pair.a;
@@ -354,6 +369,7 @@ export async function syncHousehold(
       description: describeAnimal(animal, after.homeCleanliness),
       story: row.description,
       bonds: bondsOf(row.id),
+      visitingHost: visitingHost.get(row.id),
     };
   });
 

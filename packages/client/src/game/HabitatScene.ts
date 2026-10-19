@@ -4,16 +4,8 @@ import type { Household, HouseholdAnimal } from '../api/client.ts';
 import { bridge } from '../bridge.ts';
 import { AnimalActor, WALK_ANIMATIONS } from './AnimalActor.ts';
 import { EggActor } from './EggActor.ts';
-import {
-  FOOD_BOWL,
-  HABITAT_HEIGHT,
-  NEST,
-  HABITAT_WIDTH,
-  HORIZON_Y,
-  SLOT_POSITIONS,
-  WALK_AREA,
-  WATER_BOWL,
-} from './layout.ts';
+import { drawGround, startClouds } from './decor.ts';
+import { FOOD_BOWL, HABITAT_HEIGHT, HABITAT_WIDTH, NEST, SLOT_POSITIONS, WALK_AREA, WATER_BOWL } from './layout.ts';
 import { registerDrawings } from './pixelArt.ts';
 
 export { HABITAT_HEIGHT, HABITAT_WIDTH } from './layout.ts';
@@ -57,8 +49,8 @@ export class HabitatScene extends Phaser.Scene {
       });
     }
 
-    this.drawGround();
-    this.startClouds();
+    drawGround(this);
+    startClouds(this);
     this.foodBowl = this.add.image(FOOD_BOWL.x, FOOD_BOWL.y, 'bowlEmpty').setOrigin(0.5, 1).setDepth(FOOD_BOWL.y);
     this.waterBowl = this.add.image(WATER_BOWL.x, WATER_BOWL.y, 'bowlEmpty').setOrigin(0.5, 1).setDepth(WATER_BOWL.y);
     this.nest = this.add.image(NEST.x, NEST.y, 'nest1').setOrigin(0.5, 1).setDepth(NEST.y).setVisible(false);
@@ -249,29 +241,6 @@ export class HabitatScene extends Phaser.Scene {
 
   // --- Décor ---
 
-  /** Sol : fond blanc, trame de points gris clair avec quelques imperfections. */
-  private drawGround() {
-    const random = seededRandom(19);
-    const g = this.add.graphics().setDepth(-10);
-    g.fillStyle(0xffffff).fillRect(0, 0, HABITAT_WIDTH, HABITAT_HEIGHT);
-
-    // Ligne d'horizon, avec quelques trous.
-    g.fillStyle(0xd2d2d2);
-    for (let x = 0; x < HABITAT_WIDTH; x++) {
-      if (random() > 0.08) g.fillRect(x, HORIZON_Y, 1, 1);
-    }
-
-    // Trame : un point tous les 6 pixels, une rangée sur deux décalée, de plus en plus dense vers le bas.
-    for (let y = HORIZON_Y + 5, row = 0; y < HABITAT_HEIGHT; y += 6, row++) {
-      for (let x = (row % 2) * 3 + 1; x < HABITAT_WIDTH; x += 6) {
-        const roll = random();
-        if (roll < 0.12) continue; // point manquant
-        g.fillStyle(roll > 0.93 ? 0xc4c4c4 : 0xe0e0e0);
-        g.fillRect(x, y, roll > 0.96 ? 2 : 1, 1); // parfois un petit trait
-      }
-    }
-  }
-
   /** Taches au sol quand l'habitat est sale. */
   private showGroundDirt(level: 'good' | 'low' | 'bad') {
     const count = { good: 0, low: 3, bad: 7 }[level];
@@ -289,29 +258,4 @@ export class HabitatScene extends Phaser.Scene {
     );
   }
 
-  /** Deux nuages qui traversent lentement le ciel, puis reviennent de l'autre côté. */
-  private startClouds() {
-    const clouds = [
-      { key: 'cloudBig', y: 22, duration: 70000, start: 0.3 },
-      { key: 'cloudSmall', y: 48, duration: 95000, start: 0.75 },
-    ];
-    for (const cloud of clouds) {
-      const image = this.add.image(0, cloud.y, cloud.key).setDepth(-8);
-      const from = -image.width;
-      const to = HABITAT_WIDTH + image.width;
-      image.x = Math.round(from + (to - from) * cloud.start);
-      const drift = (startX: number) =>
-        this.tweens.add({
-          targets: image,
-          x: to,
-          duration: cloud.duration * ((to - startX) / (to - from)),
-          onUpdate: () => image.setX(Math.round(image.x)),
-          onComplete: () => {
-            image.x = from;
-            drift(from);
-          },
-        });
-      drift(image.x);
-    }
-  }
 }

@@ -7,6 +7,7 @@ export * from './genetics.ts';
 export * from './i18n/index.ts';
 export * from './incubation.ts';
 export * from './lifecycle.ts';
+export * from './meetings.ts';
 export * from './names.ts';
 export * from './needs.ts';
 export * from './random.ts';

@@ -12,7 +12,7 @@ export const MIGRATIONS = fileURLToPath(new URL('../drizzle', import.meta.url));
 
 /** Vide toutes les tables de jeu (l'horloge du monde est conservée). */
 export async function resetDb({ db }: Database) {
-  await db.execute(sql`truncate table eggs, clutches, pairs, animals, households, sessions, players cascade`);
+  await db.execute(sql`truncate table meetings, meeting_listings, friendships, eggs, clutches, pairs, animals, households, sessions, players cascade`);
 }
 
 /**

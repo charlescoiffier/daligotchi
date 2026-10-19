@@ -1,6 +1,16 @@
 import type { AnimalAction, EggAction, HouseholdAction, MessageKey } from '@daligotchi/core';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { ApiError, api, type CareRequest, type Household, type Player } from '../api/client.ts';
+import {
+  ApiError,
+  api,
+  type CareRequest,
+  type Friends,
+  type Household,
+  type Meeting,
+  type MeetingInteraction,
+  type Meetings,
+  type Player,
+} from '../api/client.ts';
 import { bridge } from '../bridge.ts';
 import { createGame, type GameHandle } from '../game/createGame.ts';
 import { t } from '../i18n/index.ts';
@@ -9,6 +19,8 @@ import { AdoptionPanel } from './AdoptionPanel.tsx';
 import { AnimalCard } from './AnimalCard.tsx';
 import { EggCard } from './EggCard.tsx';
 import { GenealogyPanel, type GenealogyTarget } from './GenealogyPanel.tsx';
+import { MeetingOverlay } from './MeetingOverlay.tsx';
+import { MeetingsPanel } from './MeetingsPanel.tsx';
 import { joinNames } from './names.ts';
 import { NestPanel } from './NestPanel.tsx';
 
@@ -19,7 +31,7 @@ const REFRESH_INTERVAL_MS = 2 * 60 * 1000;
 type Selection = { kind: 'animal'; id: string } | { kind: 'egg'; id: string } | null;
 /** Action choisie avant la cible : il reste à toucher un animal ou un œuf. */
 type Pending = { kind: 'animal'; action: AnimalAction } | { kind: 'egg'; action: EggAction } | null;
-type Panel = 'actions' | 'adoption' | 'nest' | 'genealogy' | null;
+type Panel = 'actions' | 'adoption' | 'nest' | 'genealogy' | 'meetings' | null;
 
 interface HouseholdScreenProps {
   player: Player;
@@ -35,6 +47,10 @@ export function HouseholdScreen({ player, onLogout }: HouseholdScreenProps) {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [genealogy, setGenealogy] = useState<GenealogyTarget | null>(null);
+  const [meetings, setMeetings] = useState<Meetings | null>(null);
+  const [friends, setFriends] = useState<Friends | null>(null);
+  /** Scène de rencontre en cours (jouée ou revue en souvenir). */
+  const [scene, setScene] = useState<{ meeting: Meeting; mode: 'play' | 'souvenir' } | null>(null);
 
   const game = useRef<GameHandle | null>(null);
   const pendingRef = useRef<Pending>(null);
@@ -61,6 +77,58 @@ export function HouseholdScreen({ player, onLogout }: HouseholdScreenProps) {
     for (const hatching of data.hatched) {
       const form = t(`form.${hatching.form}` as MessageKey).toLowerCase();
       showToast(t('hatch.born', { name: hatching.name, form }));
+    }
+  }
+
+  function loadSocial() {
+    api.meetings().then(setMeetings, () => {});
+    api.friends().then(setFriends, () => {});
+  }
+
+  function startScene(meeting: Meeting, mode: 'play' | 'souvenir') {
+    setPanel(null);
+    setSelection(null);
+    setScene({ meeting, mode });
+    game.current?.startMeeting({
+      inviter: meeting.inviterAnimal,
+      invitee: meeting.inviteeAnimal,
+      replay: mode === 'souvenir' ? meeting.interactions : undefined,
+    });
+  }
+
+  async function acceptMeeting(meeting: Meeting) {
+    setBusy(true);
+    try {
+      startScene(await api.acceptMeeting(meeting.id), 'play');
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'busy') showToast(t('meetings.error.busy'));
+      else handleError(e);
+      loadSocial();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function finishScene(interactions: MeetingInteraction[]) {
+    if (!scene) return;
+    const { meeting, mode } = scene;
+    setBusy(true);
+    try {
+      if (mode === 'play') {
+        const { outcome } = await api.finishMeeting(meeting.id, interactions);
+        const names = { a: meeting.inviterAnimal.name, b: meeting.inviteeAnimal.name };
+        showToast(t(`outcome.${outcome.level}`, names) + (outcome.eggCount > 0 ? t('outcome.eggs') : ''));
+      } else {
+        await api.souvenirSeen(meeting.id);
+      }
+    } catch (e) {
+      handleError(e);
+    } finally {
+      game.current?.stopMeeting();
+      setScene(null);
+      setBusy(false);
+      loadSocial();
+      api.household().then(updateHousehold, () => {});
     }
   }
 
@@ -170,10 +238,15 @@ export function HouseholdScreen({ player, onLogout }: HouseholdScreenProps) {
         .catch((e) => {
           if (e instanceof ApiError && e.status === 401) onLogout();
         });
-    const onVisible = () => document.visibilityState === 'visible' && load();
-    const refresh = setInterval(() => document.visibilityState === 'visible' && load(), REFRESH_INTERVAL_MS);
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      load();
+      loadSocial();
+    };
+    const refresh = setInterval(onVisible, REFRESH_INTERVAL_MS);
 
     load();
+    loadSocial();
     api.health().then((health) => setWorldSpeed(health.worldSpeed), () => {});
     document.addEventListener('visibilitychange', onVisible);
 
@@ -205,6 +278,9 @@ export function HouseholdScreen({ player, onLogout }: HouseholdScreenProps) {
   const hasAnimals = (household?.animals.length ?? 0) > 0;
   const hasEggs = (household?.eggs.length ?? 0) > 0;
   const empty = household && !hasAnimals && !hasEggs;
+  const socialCount =
+    (meetings ? meetings.received.length + meetings.toResume.length + meetings.souvenirs.length : 0) +
+    (friends?.incoming.length ?? 0);
 
   return (
     <>
@@ -222,7 +298,7 @@ export function HouseholdScreen({ player, onLogout }: HouseholdScreenProps) {
             {t('logout')}
           </button>
         </header>
-        {selectedAnimal && !pending && (
+        {selectedAnimal && !pending && !scene && (
           <AnimalCard
             key={selectedAnimal.id}
             animal={selectedAnimal}
@@ -234,7 +310,7 @@ export function HouseholdScreen({ player, onLogout }: HouseholdScreenProps) {
             onClose={closeCard}
           />
         )}
-        {selectedEgg && !pending && (
+        {selectedEgg && !pending && !scene && (
           <EggCard
             egg={selectedEgg}
             busy={busy}
@@ -248,6 +324,17 @@ export function HouseholdScreen({ player, onLogout }: HouseholdScreenProps) {
       {empty && !panel && <p class="notice">{t('household.empty')}</p>}
 
       <footer class="bottom-bar">
+        {scene && (
+          <MeetingOverlay
+            key={scene.meeting.id}
+            meeting={scene.meeting}
+            mode={scene.mode}
+            busy={busy}
+            onPet={(which) => game.current?.meetingPet(which)}
+            onBall={() => game.current?.meetingBall()}
+            onFinish={finishScene}
+          />
+        )}
         {toast && (
           <p class="toast" role="status">
             {toast}
@@ -311,8 +398,25 @@ export function HouseholdScreen({ player, onLogout }: HouseholdScreenProps) {
           />
         )}
         {panel === 'genealogy' && genealogy && <GenealogyPanel target={genealogy} onClose={() => setPanel(null)} />}
-        {!panel && !pending && (
+        {panel === 'meetings' && household && meetings && friends && (
+          <MeetingsPanel
+            household={household}
+            meetings={meetings}
+            friends={friends}
+            busy={busy}
+            onPlay={startScene}
+            onAccept={acceptMeeting}
+            onDecline={(m) => api.declineMeeting(m.id).then(loadSocial, loadSocial)}
+            onChanged={loadSocial}
+            onToast={showToast}
+            onClose={() => setPanel(null)}
+          />
+        )}
+        {!panel && !pending && !scene && (
           <div class="bottom-bar__buttons">
+            <button type="button" class="button button--secondary" disabled={!household} onClick={() => setPanel('meetings')}>
+              {socialCount > 0 ? t('meetings.buttonCount', { count: socialCount }) : t('meetings.button')}
+            </button>
             {household && household.nest.length > 0 && (
               <button type="button" class="button button--secondary" onClick={() => setPanel('nest')}>
                 {t('nest.button', { count: household.nest.length })}

@@ -3,8 +3,8 @@ import Phaser from 'phaser';
 import type { HouseholdAnimal } from '../api/client.ts';
 import { type Behaviour, chooseBehaviour } from '../behaviour/chooseBehaviour.ts';
 import { clampToWalkArea, FOOD_BOWL } from './layout.ts';
+import { spriteKeyFor } from './sprites.ts';
 
-const STAGE_SPRITE: Record<Stage, string> = { young: 'jeune', adult: 'adulte', old: 'vieux' };
 /** Animations de marche existantes (planches Piskel). */
 export const WALK_ANIMATIONS = new Set(['renard_adulte']);
 
@@ -91,16 +91,8 @@ export class AnimalActor {
     return this.container.y - this.sprite.height;
   }
 
-  /**
-   * Dessin à utiliser : la planche Piskel de la forme et de l'âge si elle existe,
-   * sinon le dessin provisoire en caractères de la forme, sinon le renard.
-   */
   private get spriteBase() {
-    const stage = STAGE_SPRITE[this.animal.stage];
-    const sheet = `${this.animal.form}_${stage}`;
-    if (this.scene.textures.exists(sheet)) return sheet;
-    if (this.scene.textures.exists(this.animal.form)) return this.animal.form;
-    return `renard_${stage}`;
+    return spriteKeyFor(this.scene, this.animal.form, this.animal.stage);
   }
 
   /** Nouvel état venu du serveur (après une visite ou un soin). */
@@ -129,8 +121,10 @@ export class AnimalActor {
     this.container.destroy();
   }
 
-  /** Taches de saleté selon la propreté, et petits cœurs des amoureux. */
+  /** Taches de saleté selon la propreté, petits cœurs des amoureux, absence pendant une visite. */
   private refreshLook() {
+    // En visite chez un autre joueur (scène de rencontre) : l'animal n'est pas dans l'habitat.
+    this.container.setVisible(!this.animal.visitingHost);
     const inLove = this.animal.bonds.some((bond) => bond.level === 'love' || bond.level === 'inseparable');
     if (inLove && !this.loveTimer) {
       this.loveTimer = this.scene.time.addEvent({

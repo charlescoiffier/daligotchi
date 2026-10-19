@@ -51,12 +51,14 @@ export function advanceBonds(
   pairs: readonly PairState[],
   to: number,
   contextOf: (pair: PairState) => PairContext,
+  /** Animaux déjà amoureux d'un animal d'un autre foyer (rencontres). */
+  lovedElsewhere: ReadonlySet<string> = new Set(),
 ): PairState[] {
   const { loveThreshold, togetherPerHour, apartPerHour } = BALANCE.bonds;
   const cap = loveThreshold - 1;
 
   // Animaux déjà amoureux au début de la période.
-  const inLove = new Set<string>();
+  const inLove = new Set<string>(lovedElsewhere);
   for (const pair of pairs) {
     if (isLove(pair) && contextOf(pair).allowed) inLove.add(pair.a).add(pair.b);
   }
@@ -93,9 +95,10 @@ export function advanceBonds(
 export function boostBonds(
   pairs: readonly PairState[],
   contextOf: (pair: PairState) => PairContext,
+  lovedElsewhere: ReadonlySet<string> = new Set(),
 ): PairState[] {
   const { ballForAllBoost, loveThreshold } = BALANCE.bonds;
-  const inLove = new Set<string>();
+  const inLove = new Set<string>(lovedElsewhere);
   for (const pair of pairs) if (isLove(pair) && contextOf(pair).allowed) inLove.add(pair.a).add(pair.b);
   return pairs.map((pair) => {
     if (!contextOf(pair).together) return pair;
@@ -115,3 +118,10 @@ export function bondLevel(interaction: number): BondLevel | undefined {
   if (interaction >= friendFrom) return 'friend';
   return undefined;
 }
+
+/** Jauge d'une paire séparée (animaux de foyers différents) à l'instant `to`. */
+export function apartInteraction(pair: PairState, to: number): number {
+  if (to <= pair.at) return pair.interaction;
+  return Math.max(0, pair.interaction - BALANCE.bonds.apartPerHour * ((to - pair.at) / HOUR));
+}
+

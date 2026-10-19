@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { Household } from '../api/client.ts';
 import { HABITAT_HEIGHT, HABITAT_WIDTH, HabitatScene, HOUSEHOLD_KEY } from './HabitatScene.ts';
+import { MeetingScene, type MeetingSceneData } from './MeetingScene.ts';
 
 /** Plus grand agrandissement entier qui tient dans la fenêtre : les pixels restent nets. */
 export function integerZoom(viewportWidth: number, viewportHeight: number): number {
@@ -12,6 +13,13 @@ export function integerZoom(viewportWidth: number, viewportHeight: number): numb
 
 export interface GameHandle {
   setHousehold(household: Household): void;
+  /** Ouvre la scène de rencontre à la place de l'habitat. */
+  startMeeting(data: MeetingSceneData): void;
+  /** Effets de la scène de rencontre en cours. */
+  meetingPet(which: 'inviter' | 'invitee'): void;
+  meetingBall(): void;
+  /** Referme la scène de rencontre et revient à l'habitat. */
+  stopMeeting(): void;
   destroy(): void;
 }
 
@@ -32,7 +40,7 @@ export function createGame(parent: HTMLElement): GameHandle {
       autoCenter: Phaser.Scale.NO_CENTER,
       zoom: integerZoom(window.innerWidth, window.innerHeight),
     },
-    scene: [HabitatScene],
+    scene: [HabitatScene, MeetingScene],
   });
 
   // Valeur initiale : chaque mise à jour déclenchera ensuite `changedata-household`.
@@ -44,6 +52,20 @@ export function createGame(parent: HTMLElement): GameHandle {
   return {
     setHousehold(household) {
       game.registry.set(HOUSEHOLD_KEY, household);
+    },
+    startMeeting(data) {
+      game.scene.sleep('habitat');
+      game.scene.start('meeting', data);
+    },
+    meetingPet(which) {
+      (game.scene.getScene('meeting') as MeetingScene).pet(which);
+    },
+    meetingBall() {
+      (game.scene.getScene('meeting') as MeetingScene).ball();
+    },
+    stopMeeting() {
+      game.scene.stop('meeting');
+      game.scene.wake('habitat');
     },
     destroy() {
       window.removeEventListener('resize', onResize);

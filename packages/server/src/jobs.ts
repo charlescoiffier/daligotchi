@@ -2,6 +2,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import type { Database } from './db/client.ts';
 import { restockAdoption } from './services/adoption.ts';
 import { syncAllHouseholds } from './services/households.ts';
+import { expireMeetings } from './services/meetings.ts';
 
 export const JOB_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -19,7 +20,9 @@ interface JobDeps {
 export function startJobs({ database, now, worldNow, log }: JobDeps) {
   const run = async () => {
     try {
-      // D'abord les foyers (pontes hors connexion, dépôts du nid), puis le lieu d'adoption.
+      // Rencontres expirées ou abandonnées, puis les foyers (pontes hors connexion, dépôts du nid),
+      // puis le lieu d'adoption.
+      await expireMeetings(database, now(), worldNow());
       await syncAllHouseholds(database, worldNow());
       const result = await restockAdoption(database, now(), worldNow());
       if (result.added || result.removed) log.info(result, 'lieu d’adoption réapprovisionné');

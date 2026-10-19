@@ -29,6 +29,13 @@
       "when": 1792418652490,
       "tag": "0003_relations",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792419355697,
+      "tag": "0004_meetings",
+      "breakpoints": true
     }
   ]
 }

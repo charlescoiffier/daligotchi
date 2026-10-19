@@ -10,6 +10,7 @@ import { adoptionRoutes } from './routes/adoption.ts';
 import { authRoutes } from './routes/auth.ts';
 import { healthRoutes } from './routes/health.ts';
 import { householdRoutes } from './routes/household.ts';
+import { socialRoutes } from './routes/social.ts';
 import { loadWorldClock } from './services/world.ts';
 
 export interface AppDeps {
@@ -45,6 +46,7 @@ export async function buildApp({ config, database, now = Date.now }: AppDeps) {
       await api.register(authRoutes, { config, database, now });
       await api.register(householdRoutes, { database, worldNow });
       await api.register(adoptionRoutes, { database, worldNow });
+      await api.register(socialRoutes, { database, now, worldNow });
     },
     { prefix: '/api' },
   );

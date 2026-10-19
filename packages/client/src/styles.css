@@ -544,3 +544,123 @@ body {
 .tree__story {
   font-style: italic;
 }
+
+/* Rencontres */
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin: 4px 0 10px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.tabs__tab {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tabs__tab--active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+.panel__subtitle {
+  margin: 12px 0 6px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.adoption__egg--muted {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.adoption__egg--column {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.friends__add {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.friends__add input {
+  flex: 1;
+  font: inherit;
+  padding: 8px 10px;
+  border: 2px solid var(--panel-border);
+  border-radius: 10px;
+}
+
+.friends__animal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  font-size: 0.9rem;
+}
+
+.invite fieldset {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+}
+
+.invite legend {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.invite__choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 0.9rem;
+}
+
+.invite__buttons {
+  display: flex;
+  justify-content: space-between;
+}
+
+.scene-panel h2 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.scene-panel {
+  padding: 10px 12px 12px;
+}
+
+.scene-panel .panel__intro {
+  margin: 0 0 8px;
+}
+
+.scene-panel__buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.scene-panel__buttons .button--action {
+  font-size: 0.8rem;
+  padding: 8px 4px;
+}
+
+.scene-panel__finish {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  font-size: 1rem;
+}
