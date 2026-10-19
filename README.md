@@ -1,6 +1,51 @@
 # Dalígotchi
 
-Jeu familial d'animaux de compagnie en pixel art. Le design est décrit dans `outputs/Daligotchi-GDD-v0.3.md` et l'architecture dans `outputs/Daligotchi-Plan-technique-PVJ-v0.2.md`.
+**Un jeu d'animaux de compagnie en pixel art, imaginé et dessiné en famille.**
+
+On adopte des œufs, on les couve jusqu'à l'éclosion, puis on prend soin d'animaux qui vivent leur vie : ils se promènent, dorment, réclament à manger ou à jouer. Au fil des générations, les rencontres entre animaux font naître des hybrides : un renard et un poulpe donnent… un poulpard.
+
+<p align="center">
+  <img src="docs/capture-habitat.jpg" alt="L'habitat de Dalígotchi sur téléphone : un renard et un poulpe dans un décor gris clair sur fond blanc" width="300">
+</p>
+
+- **Environ quinze minutes par jour**, en deux visites, sans condition de victoire.
+- **Bienveillant** : l'absence ne tue pas, les besoins sont décrits par des mots (« a faim », « se sent aimé »), jamais par des chiffres.
+- **Sans publicité ni achat**.
+- **En ligne** : [daligotchi.charlescoiffier.fr](https://daligotchi.charlescoiffier.fr) (version de test, sur invitation, le temps y passe 24 fois plus vite).
+
+## Qui fait quoi
+
+Les enfants imaginent les règles, dessinent les animaux dans [Piskel](https://www.piskelapp.com/) et testent le jeu ; les parents décident ; le code est écrit avec [Claude Code](https://claude.com/claude-code).
+
+Les règles du jeu sont décrites dans le [Game Design Document](outputs/Daligotchi-GDD-v0.3.md), l'architecture dans le [plan technique](outputs/Daligotchi-Plan-technique-PVJ-v0.2.md).
+
+## Avancement de la première version jouable
+
+| Étape | Contenu | État |
+|---|---|---|
+| 0 | Fondations : monorepo, serveur, base de données, tests | ✅ |
+| 1 | Règles de base : besoins, cycle de vie, génétique, simulateur | ✅ |
+| 2 | Comptes et foyer | ✅ |
+| 3 | Soins, décor, comportements des animaux | ✅ |
+| 4 | Œufs, incubation, éclosion, lieu d'adoption | ✅ |
+| 5 | Mise en ligne de test | 🚧 |
+| 6 | Relations : amour, pontes, nid, généalogie | |
+| 7 | Rencontres entre joueurs | |
+| 8 | Fin de vie | |
+| 9 | Finitions : application installable, musiques et sons | |
+
+## Dessiner pour le jeu
+
+- **Animaux** : planches PNG exportées de Piskel dans `packages/client/public/sprites/` (sources `.piskel` dans `piskel/`). Une planche `poulpe_jeune.png` remplace automatiquement le dessin provisoire du poulpe.
+- **Petits éléments** (cœur, balle, bulles, nuages, gamelles, œuf…) : dessinés **en lettres** dans [`pixelArt.ts`](packages/client/src/game/pixelArt.ts), chaque lettre étant une couleur. On peut les modifier case par case ; un test vérifie qu'aucun dessin n'est cassé.
+- **Textes** : tous dans [`fr.json`](packages/core/src/i18n/fr.json).
+- **Équilibrage** (vitesse de la faim, durée de l'incubation…) : tous les nombres sont dans [`balance.ts`](packages/core/src/balance.ts).
+
+## Technologies
+
+TypeScript partout, dans un monorepo pnpm : règles partagées (`core`), serveur **Fastify** + **PostgreSQL** (Drizzle), jeu **Phaser** (habitat) + **Preact** (menus), construit avec **Vite**. Déploiement par GitHub Actions sur un VPS, derrière Traefik.
+
+Le serveur a toujours le dernier mot ; l'état des animaux est calculé « paresseusement » à partir d'un instantané et de l'heure, sans tâche qui tourne en permanence.
 
 ## Organisation
 
@@ -9,7 +54,10 @@ Jeu familial d'animaux de compagnie en pixel art. Le design est décrit dans `ou
 | `packages/core` | Règles du jeu partagées (besoins, cycle de vie, génétique, textes, simulateur), sans réseau ni base |
 | `packages/server` | API Fastify + PostgreSQL (Drizzle) |
 | `packages/client` | Jeu web : Phaser (habitat) + Preact (menus) |
-| `deploy` | Docker Compose, Caddy et configuration pour le VPS |
+| `deploy` | Déploiement sur le VPS (Docker Compose, Traefik) |
+| `docs` | Images du README |
+| `outputs` | GDD et plan technique, une version par fichier |
+| `piskel` | Sources des dessins (Piskel) |
 | `scripts` | Outils locaux (Postgres du projet) |
 
 ## Prérequis
@@ -88,16 +136,12 @@ Le terminal affiche une ligne `Network: http://192.168.x.x:5173/` : c'est l'adre
 - Les nombres d'équilibrage sont dans `packages/core/src/balance.ts`.
 - Les textes du jeu sont dans `packages/core/src/i18n/fr.json`.
 
-## Déploiement (VPS)
+## Déploiement
 
-Copier `deploy/.env.example` en `deploy/.env`, le remplir, puis lancer depuis la racine du dépôt :
+Chaque envoi sur la branche `main` construit l'image Docker sur GitHub Actions, la publie sur GitHub Container Registry, puis la déploie sur le VPS par SSH (modèle `vps-infra`, Traefik pour le HTTPS). L'application et sa base PostgreSQL tournent dans `~/srv/daligotchi/` ; les secrets (`DATABASE_URL`, `POSTGRES_PASSWORD`, `WORLD_SPEED`) sont dans `~/srv/daligotchi/.env` sur le VPS, jamais dans Git. Les migrations s'appliquent au démarrage du conteneur.
 
-```bash
-docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --build
-```
-
-Créer ensuite les comptes des joueurs depuis le VPS :
+Créer les comptes des joueurs depuis le VPS :
 
 ```bash
-docker compose -f deploy/docker-compose.yml exec app node dist/admin.js create-user <pseudo>
+ssh deploy@187.7.73.201 "cd ~/srv/daligotchi && docker compose exec app node dist/admin.js create-user <pseudo>"
 ```
