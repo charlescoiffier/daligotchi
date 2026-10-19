@@ -9,6 +9,8 @@ const ConfigSchema = z.object({
   WORLD_SPEED: z.coerce.number().positive().default(1),
   /** Dossier du jeu compilé à servir (production). Vide en développement : Vite s'en charge. */
   CLIENT_DIST: z.string().optional(),
+  /** Essais de connexion autorisés par minute et par adresse. */
+  LOGIN_ATTEMPTS_PER_MINUTE: z.coerce.number().int().positive().default(10),
   /** Dossier des migrations SQL, relatif au dossier courant. */
   MIGRATIONS_DIR: z.string().default('drizzle'),
 });

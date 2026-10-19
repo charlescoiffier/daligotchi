@@ -7,6 +7,7 @@
  *   pnpm admin seed-test-accounts                           3 comptes de test (hors production)
  *
  * Sans --password, un mot de passe est généré et affiché une seule fois.
+ * --allow-weak-password accepte un mot de passe de moins de 8 caractères (déconseillé sur un site public).
  */
 import { randomInt } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -66,7 +67,10 @@ async function seedTestAccounts(database: Database, worldNow: number, outputFile
 async function main() {
   const { positionals, values } = parseArgs({
     allowPositionals: true,
-    options: { password: { type: 'string' } },
+    options: {
+      password: { type: 'string' },
+      'allow-weak-password': { type: 'boolean', default: false },
+    },
   });
   const [command, pseudo] = positionals;
   const config = loadConfig();
@@ -80,7 +84,8 @@ async function main() {
       case 'create-user': {
         if (!pseudo) throw new Error('Usage : create-user <pseudo> [--password <mdp>]');
         const password = values.password ?? generatePassword();
-        const player = await createPlayer(database, { pseudo, password }, worldNow);
+        const weak = { allowWeakPassword: values['allow-weak-password'] };
+        const player = await createPlayer(database, { pseudo, password }, worldNow, weak);
         console.log(`Joueur « ${player.pseudo} » créé.`);
         if (!values.password) console.log(`Mot de passe (à transmettre au joueur) : ${password}`);
         break;
@@ -88,7 +93,8 @@ async function main() {
       case 'reset-password': {
         if (!pseudo) throw new Error('Usage : reset-password <pseudo> [--password <mdp>]');
         const password = values.password ?? generatePassword();
-        if (!(await setPassword(database, pseudo, password))) throw new Error(`Joueur « ${pseudo} » introuvable.`);
+        const weak = { allowWeakPassword: values['allow-weak-password'] };
+        if (!(await setPassword(database, pseudo, password, weak))) throw new Error(`Joueur « ${pseudo} » introuvable.`);
         console.log(`Mot de passe de « ${pseudo} » changé.`);
         if (!values.password) console.log(`Nouveau mot de passe : ${password}`);
         break;

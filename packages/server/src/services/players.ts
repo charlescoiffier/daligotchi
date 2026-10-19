@@ -14,6 +14,23 @@ export const PseudoSchema = z
   .pipe(z.string().regex(/^[\p{L}\p{N}_-]{3,20}$/u, '3 à 20 caractères : lettres, chiffres, - ou _'));
 
 export const PasswordSchema = z.string().min(8, 'au moins 8 caractères').max(200);
+/** Uniquement sur décision explicite de l'administrateur (option --allow-weak-password). */
+const WeakPasswordSchema = z.string().min(1).max(200);
+
+export interface PasswordOptions {
+  /** Accepte un mot de passe de moins de 8 caractères. Déconseillé sur un site public. */
+  allowWeakPassword?: boolean;
+}
+
+/** Les accents peuvent arriver sous deux formes selon le clavier : on les unifie. */
+function normalizePassword(password: string): string {
+  return password.normalize('NFC');
+}
+
+function hashPassword(password: string, options: PasswordOptions = {}) {
+  const schema = options.allowWeakPassword ? WeakPasswordSchema : PasswordSchema;
+  return hash(normalizePassword(schema.parse(password)));
+}
 
 export interface Player {
   id: string;
@@ -28,9 +45,10 @@ export async function createPlayer(
   { db }: Database,
   input: { pseudo: string; password: string },
   worldNow: number,
+  options: PasswordOptions = {},
 ): Promise<Player> {
   const pseudo = PseudoSchema.parse(input.pseudo);
-  const passwordHash = await hash(PasswordSchema.parse(input.password));
+  const passwordHash = await hashPassword(input.password, options);
   return db.transaction(async (tx) => {
     const [player] = await tx
       .insert(players)
@@ -46,8 +64,13 @@ export async function createPlayer(
   });
 }
 
-export async function setPassword({ db }: Database, pseudo: string, password: string) {
-  const passwordHash = await hash(PasswordSchema.parse(password));
+export async function setPassword(
+  { db }: Database,
+  pseudo: string,
+  password: string,
+  options: PasswordOptions = {},
+) {
+  const passwordHash = await hashPassword(password, options);
   const updated = await db
     .update(players)
     .set({ passwordHash })
@@ -70,7 +93,7 @@ export async function verifyCredentials(
   password: string,
 ): Promise<Player | undefined> {
   const player = await findPlayerByPseudo(database, pseudo);
-  const ok = await verify(player?.passwordHash ?? (await DUMMY_HASH_PROMISE), password);
+  const ok = await verify(player?.passwordHash ?? (await DUMMY_HASH_PROMISE), normalizePassword(password));
   return player && ok ? { id: player.id, pseudo: player.pseudo } : undefined;
 }
 

@@ -19,11 +19,12 @@ export async function resetDb({ db }: Database) {
  * Application de test avec une horloge réelle contrôlable :
  * `clock.advance(ms)` fait passer le temps sans attendre.
  */
-export async function createTestContext(worldSpeed = 1) {
+export async function createTestContext(worldSpeed = 1, loginAttemptsPerMinute = 1000) {
   const config = loadConfig({
     NODE_ENV: 'test',
     DATABASE_URL: TEST_DATABASE_URL,
     WORLD_SPEED: String(worldSpeed),
+    LOGIN_ATTEMPTS_PER_MINUTE: String(loginAttemptsPerMinute),
   });
   const database = createDb(config.DATABASE_URL);
   await runMigrations(database, MIGRATIONS);

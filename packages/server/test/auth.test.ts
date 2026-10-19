@@ -99,8 +99,32 @@ describe('création de comptes', () => {
     await expect(createPlayer(ctx.database, { pseudo: 'valide', password: 'court' }, 0)).rejects.toThrow();
   });
 
+  it('accepte un mot de passe court seulement sur décision explicite', async () => {
+    await expect(createPlayer(ctx.database, { pseudo: 'léon', password: 'Léon' }, 0)).rejects.toThrow();
+    await createPlayer(ctx.database, { pseudo: 'léon', password: 'Léon' }, 0, { allowWeakPassword: true });
+    expect((await login('Léon', 'Léon')).statusCode).toBe(200);
+    // Même mot de passe avec l'accent tapé en deux caractères
+    expect((await login('Léon', 'Le\u0301on')).statusCode).toBe(200);
+    expect((await login('Léon', 'Leon')).statusCode).toBe(401);
+  });
+
   it('refuse un pseudo déjà pris', async () => {
     await createPlayer(ctx.database, { pseudo: 'lune', password: 'croissant-de-lune' }, 0);
     await expect(createPlayer(ctx.database, { pseudo: 'LUNE', password: 'autre-mot-de-passe' }, 0)).rejects.toThrow();
   });
 });
+
+describe('limite des essais de connexion', () => {
+  it('bloque une adresse qui multiplie les essais', async () => {
+    const strict = await createTestContext(1, 3);
+    try {
+      const attempt = () =>
+        strict.app.inject({ method: 'POST', url: '/api/auth/login', payload: { pseudo: 'lune', password: 'devine' } });
+      for (let i = 0; i < 3; i++) expect((await attempt()).statusCode).toBe(401);
+      expect((await attempt()).statusCode).toBe(429);
+    } finally {
+      await strict.close();
+    }
+  });
+});
+

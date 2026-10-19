@@ -23,7 +23,7 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (
 ) => {
   app.post(
     '/auth/login',
-    { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
+    { config: { rateLimit: { max: config.LOGIN_ATTEMPTS_PER_MINUTE, timeWindow: '1 minute' } } },
     async (request, reply) => {
       const body = LoginBody.safeParse(request.body);
       if (!body.success) return reply.code(400).send({ error: 'invalid_request' });
