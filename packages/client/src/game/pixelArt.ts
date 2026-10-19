@@ -21,6 +21,7 @@ export const PALETTE: Record<string, string> = {
   n: '#7a3e12', // brun (intérieur des oreilles)
   v: '#9b6bd1', // violet poulpe
   V: '#6f46a6', // violet foncé
+  j: '#f2c94c', // jaune (étoile d'adieu)
 };
 
 export const DRAWINGS = {
@@ -83,6 +84,16 @@ export const DRAWINGS = {
     '..ggggg..',
   ],
   speck: ['dd'],
+  /** Étoile qui monte au ciel lors d'un adieu. */
+  star: [
+    '...j...',
+    '...j...',
+    'jjjjjjj',
+    '.jjjjj.',
+    '..jjj..',
+    '.jj.jj.',
+    'jj...jj',
+  ],
   egg: [
     '...kkk...',
     '..kwwwk..',

@@ -17,7 +17,7 @@ import {
   visibleForm,
   WEEK,
 } from '@daligotchi/core';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { Database } from '../db/client.ts';
 import { type HouseholdView, syncHousehold, TargetNotFoundError } from './sync.ts';
 
@@ -39,7 +39,7 @@ export async function lockHousehold(tx: Tx, playerId: string) {
 
 /** Places occupées : animaux et œufs en incubation confondus (GDD §3). */
 export async function usedSlots(tx: Tx, householdId: string): Promise<number> {
-  const animalCount = await tx.$count(animals, eq(animals.householdId, householdId));
+  const animalCount = await tx.$count(animals, and(eq(animals.householdId, householdId), isNull(animals.diedAt)));
   const eggCount = await tx.$count(eggs, and(eq(eggs.householdId, householdId), eq(eggs.status, 'incubating')));
   return animalCount + eggCount;
 }

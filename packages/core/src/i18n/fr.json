@@ -214,5 +214,10 @@
   "outcome.friend": "{a} et {b} sont copains.",
   "outcome.none": "{a} et {b} ont fait connaissance.",
   "outcome.eggs": " Ils ont pondu : regarde ton nid !",
-  "visiting": "en visite chez {host}"
+  "visiting": "en visite chez {host}",
+  "elder.lastMoments": "vit ses derniers moments : reste près de lui",
+  "farewell.title": "Au revoir, {name}",
+  "farewell.text": "{name} s’est endormi pour toujours, entouré de ton affection. Il reste dans la généalogie de sa famille.",
+  "farewell.ok": "Au revoir, {name}",
+  "genealogy.deceased": "parti"
 }

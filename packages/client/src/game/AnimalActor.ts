@@ -147,8 +147,10 @@ export class AnimalActor {
     this.behaviourTimer = this.scene.time.delayedCall(delay, () => this.run(chooseBehaviour(this.animal.description, Math.random)));
   }
 
-  private run(behaviour: Behaviour) {
+  private run(chosen: Behaviour) {
     const next = (ms: number) => this.schedule(ms);
+    // Dans ses derniers moments, l'animal dort presque tout le temps.
+    const behaviour: Behaviour = this.animal.lastMoments && Math.random() < 0.8 ? 'sleep' : chosen;
     switch (behaviour) {
       case 'sit':
         next(Phaser.Math.Between(2500, 5000));
@@ -250,6 +252,34 @@ export class AnimalActor {
       duration,
       ease: 'Sine.Out',
       onComplete: () => image.destroy(),
+    });
+  }
+
+  /** Adieu : l'animal se couche doucement, s'efface, et une étoile monte au ciel. */
+  farewell(onDone: () => void) {
+    this.behaviourTimer?.remove();
+    this.loveTimer?.remove();
+    this.moveTween?.stop();
+    this.setSelected(false);
+    const star = this.scene.add.image(this.x, this.top, 'star').setDepth(1000).setAlpha(0);
+    this.scene.tweens.add({
+      targets: this.container,
+      alpha: 0,
+      duration: 2500,
+      delay: 600,
+    });
+    this.scene.tweens.chain({
+      targets: star,
+      tweens: [
+        { alpha: 1, duration: 800, delay: 1200 },
+        { y: 20, duration: 4000, ease: 'Sine.InOut' },
+        { alpha: 0, duration: 800 },
+      ],
+      onComplete: () => {
+        star.destroy();
+        this.destroy();
+        onDone();
+      },
     });
   }
 

@@ -23,7 +23,7 @@ export function GenealogyPanel({ target, onClose }: GenealogyPanelProps) {
     } else {
       Promise.all(target.parentIds.map((id) => api.tree(id))).then(
         (parents) =>
-          setTree({ id: 'egg', name: t('genealogy.egg'), form: 'renard', story: '', founder: false, parents }),
+          setTree({ id: 'egg', name: t('genealogy.egg'), form: 'renard', story: '', founder: false, deceased: false, parents }),
         () => setTree(null),
       );
     }
@@ -53,9 +53,10 @@ export function GenealogyPanel({ target, onClose }: GenealogyPanelProps) {
 function TreeNode({ node, isEgg = false }: { node: FamilyTree; isEgg?: boolean }) {
   return (
     <li class="tree__node">
-      <div class="tree__animal">
+      <div class={`tree__animal ${node.deceased ? 'tree__animal--deceased' : ''}`}>
         <strong>{node.name}</strong>
         {!isEgg && <span> · {t(`form.${node.form}` as MessageKey)}</span>}
+        {node.deceased && <span> · ✦ {t('genealogy.deceased')}</span>}
         {node.founder && <div class="tree__note">{t('genealogy.founder')}</div>}
         {node.story && <div class="tree__story">« {node.story} »</div>}
       </div>

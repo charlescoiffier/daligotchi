@@ -13,10 +13,12 @@ import {
   bondLevel,
   boostBonds,
   canLay,
+  comfortAfterVisit,
   DAY,
   describeAnimal,
   describeEgg,
   describeHome,
+  endOfLifeStep,
   type EggDescription,
   type Form,
   type HouseholdState,
@@ -31,8 +33,8 @@ import {
   type Stage,
   stageOf,
 } from '@daligotchi/core';
-import { and, asc, eq, inArray, lte, notInArray, or } from 'drizzle-orm';
-import { animals, clutches, eggs, households, meetings, pairs, players } from '../db/schema.ts';
+import { and, asc, eq, inArray, isNull, lte, notInArray, or } from 'drizzle-orm';
+import { animals, clutches, eggs, households, meetingListings, meetings, pairs, players } from '../db/schema.ts';
 import { layClutch, previousClutchPending } from './clutch.ts';
 import type { CareRequest, Tx } from './households.ts';
 
@@ -52,6 +54,8 @@ export interface HouseholdView {
     bonds: { animalId: string; name: string; level: BondLevel | 'inseparable' }[];
     /** Pseudo du joueur chez qui l'animal est en visite (scène de rencontre en cours). */
     visitingHost?: string;
+    /** Arrivé au terme de sa vie : il vit ses derniers moments. */
+    lastMoments: boolean;
   }[];
   /** Œufs en incubation : leur espèce reste secrète jusqu'à l'éclosion. */
   eggs: { id: string; description: EggDescription }[];
@@ -61,6 +65,8 @@ export interface HouseholdView {
   hatched: { eggId: string; animalId: string; name: string; form: Form }[];
   /** Pontes pas encore annoncées au joueur. */
   newClutches: { parents: string[]; eggCount: number }[];
+  /** Animaux qui se sont endormis pour toujours pendant cette visite (scène d'adieu). */
+  farewells: { animalId: string; name: string; form: Form; stage: Stage }[];
 }
 
 /** L'animal ou l'œuf visé n'existe pas dans le foyer de ce joueur. */
@@ -98,7 +104,7 @@ export async function syncHousehold(
   const animalRows = await tx
     .select()
     .from(animals)
-    .where(eq(animals.householdId, householdRow.id))
+    .where(and(eq(animals.householdId, householdRow.id), isNull(animals.diedAt)))
     .orderBy(asc(animals.createdAt), asc(animals.id));
   const eggRows = await tx
     .select()
@@ -112,7 +118,8 @@ export async function syncHousehold(
     at: householdRow.at,
     lastVisitAt: householdRow.lastVisitAt,
     animals: animalRows.map(
-      (row): AnimalState => ({ needs: row.needs, ageMs: row.ageMs, lifespanMs: row.lifespanMs, at: row.at }),
+      // Durée de vie effective : la durée héritée plus le bonus de confort de la vieillesse.
+      (row): AnimalState => ({ needs: row.needs, ageMs: row.ageMs, lifespanMs: row.lifespanMs + row.comfortMs, at: row.at }),
     ),
   };
   let after = advanceHousehold(before, worldNow);
@@ -141,7 +148,7 @@ export async function syncHousehold(
     allowed: !areRelated(kinById.get(pair.a)!, kinById.get(pair.b)!),
   });
   // Liens avec des animaux d'autres foyers (rencontres) : ils comptent pour l'exclusivité.
-  const crossPairs =
+  const allCrossPairs =
     ids.length === 0
       ? []
       : await tx
@@ -153,6 +160,17 @@ export async function syncHousehold(
               and(notInArray(pairs.animalA, ids), inArray(pairs.animalB, ids)),
             ),
           );
+  // Les animaux partis ne comptent plus.
+  const otherIds = [...new Set(allCrossPairs.map((pair) => (ids.includes(pair.animalA) ? pair.animalB : pair.animalA)))];
+  const otherRows =
+    otherIds.length === 0
+      ? []
+      : await tx
+          .select({ id: animals.id, name: animals.name, ageMs: animals.ageMs, diedAt: animals.diedAt })
+          .from(animals)
+          .where(inArray(animals.id, otherIds));
+  const departed = new Set(otherRows.filter((row) => row.diedAt !== null).map((row) => row.id));
+  const crossPairs = allCrossPairs.filter((pair) => !departed.has(pair.animalA) && !departed.has(pair.animalB));
   const lovedElsewhere = new Set<string>();
   for (const pair of crossPairs) {
     if (apartInteraction({ a: pair.animalA, b: pair.animalB, interaction: pair.interaction, at: pair.at }, worldNow) >= BALANCE.bonds.loveThreshold) {
@@ -209,6 +227,41 @@ export async function syncHousehold(
       ),
     );
 
+  // --- Fin de vie (GDD §4) : confort, derniers moments, adieu — seulement pendant une visite ---
+  const comfortById = new Map(animalRows.map((row) => [row.id, row.comfortMs]));
+  const lastMomentsById = new Map(animalRows.map((row) => [row.id, row.lastMomentsSince]));
+  const departing = new Set<string>();
+  if (visit) {
+    for (const [index, row] of animalRows.entries()) {
+      const animal = after.animals[index]!;
+      const happy = describeAnimal(animal, after.homeCleanliness).emotion === 'emotion.happy';
+      const comfort = comfortAfterVisit(stageOf(animal.ageMs), happy, row.comfortMs);
+      comfortById.set(row.id, comfort);
+      const step = endOfLifeStep({
+        ageMs: animal.ageMs,
+        lifespanMs: row.lifespanMs + comfort,
+        lastMomentsSince: row.lastMomentsSince,
+        visit,
+        now: worldNow,
+      });
+      lastMomentsById.set(row.id, step.lastMomentsSince);
+      if (step.dies) departing.add(row.id);
+    }
+  }
+  if (departing.size > 0) {
+    const gone = [...departing];
+    await tx.delete(meetingListings).where(inArray(meetingListings.animalId, gone));
+    await tx
+      .update(meetings)
+      .set({ status: 'expired' })
+      .where(
+        and(
+          eq(meetings.status, 'pending'),
+          or(inArray(meetings.inviterAnimalId, gone), inArray(meetings.inviteeAnimalId, gone)),
+        ),
+      );
+  }
+
   // --- Enregistrement ---
   await tx
     .update(households)
@@ -223,7 +276,15 @@ export async function syncHousehold(
     const animal = after.animals[index]!;
     await tx
       .update(animals)
-      .set({ needs: animal.needs, ageMs: animal.ageMs, at: animal.at, lastClutchAt: lastClutchAt.get(row.id) ?? null })
+      .set({
+        needs: animal.needs,
+        ageMs: animal.ageMs,
+        at: animal.at,
+        lastClutchAt: lastClutchAt.get(row.id) ?? null,
+        comfortMs: comfortById.get(row.id) ?? 0,
+        lastMomentsSince: lastMomentsById.get(row.id) ?? null,
+        ...(departing.has(row.id) ? { diedAt: worldNow } : {}),
+      })
       .where(eq(animals.id, row.id));
   }
 
@@ -272,6 +333,7 @@ export async function syncHousehold(
         description: describeAnimal(baby, after.homeCleanliness),
         story: '',
         bonds: [],
+        lastMoments: false,
       });
     } else {
       await tx
@@ -321,17 +383,10 @@ export async function syncHousehold(
   }
 
   // --- Vue ---
-  // Noms des animaux des autres foyers avec qui un lien existe.
-  const crossIds = crossPairs.map((pair) => (ids.includes(pair.animalA) ? pair.animalB : pair.animalA));
-  if (crossIds.length > 0) {
-    const crossRows = await tx
-      .select({ id: animals.id, name: animals.name, ageMs: animals.ageMs })
-      .from(animals)
-      .where(inArray(animals.id, crossIds));
-    for (const row of crossRows) {
-      nameById.set(row.id, row.name);
-      stageById.set(row.id, stageOf(row.ageMs));
-    }
+  // Noms et âges des animaux des autres foyers avec qui un lien existe.
+  for (const row of otherRows) {
+    nameById.set(row.id, row.name);
+    stageById.set(row.id, stageOf(row.ageMs));
   }
   const crossStates: PairState[] = crossPairs.map((pair) => ({
     a: pair.animalA,
@@ -352,7 +407,7 @@ export async function syncHousehold(
 
   const bondsOf = (id: string): HouseholdView['animals'][number]['bonds'] =>
     [...pairStates, ...crossStates]
-      .filter((pair) => pair.a === id || pair.b === id)
+      .filter((pair) => (pair.a === id || pair.b === id) && !departing.has(pair.a) && !departing.has(pair.b))
       .map((pair) => {
         const other = pair.a === id ? pair.b : pair.a;
         let level: BondLevel | 'inseparable' | undefined = bondLevel(pair.interaction);
@@ -364,9 +419,15 @@ export async function syncHousehold(
       .filter((bond) => bond !== undefined)
       .sort((x, y) => ['love', 'inseparable', 'close', 'friend'].indexOf(x.level) - ['love', 'inseparable', 'close', 'friend'].indexOf(y.level));
 
-  const animalViews = animalRows.map((row, index) => {
+  const farewells: HouseholdView['farewells'] = animalRows
+    .map((row, index) => ({ row, index }))
+    .filter(({ row }) => departing.has(row.id))
+    .map(({ row, index }) => ({ animalId: row.id, name: row.name, form: row.form, stage: stageOf(after.animals[index]!.ageMs) }));
+
+  const animalViews = animalRows.flatMap((row, index) => {
+    if (departing.has(row.id)) return [];
     const animal = after.animals[index]!;
-    return {
+    return [{
       id: row.id,
       name: row.name,
       form: row.form,
@@ -375,18 +436,20 @@ export async function syncHousehold(
       story: row.description,
       bonds: bondsOf(row.id),
       visitingHost: visitingHost.get(row.id),
-    };
+      lastMoments: (lastMomentsById.get(row.id) ?? null) !== null,
+    }];
   });
 
   return {
     worldTime: worldNow,
     home: describeHome(after.homeCleanliness),
-    slots: { used: animalRows.length + eggRows.length, total: BALANCE.householdSlots },
+    slots: { used: animalRows.length - departing.size + eggRows.length, total: BALANCE.householdSlots },
     animals: [...animalViews, ...newborns],
     eggs: remainingEggs,
     nest,
     hatched,
     newClutches,
+    farewells,
   };
 }
 

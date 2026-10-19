@@ -31,7 +31,7 @@ Les règles du jeu sont décrites dans le [Game Design Document](outputs/Daligot
 | 5 | Mise en ligne de test | ✅ |
 | 6 | Relations : amour, pontes, nid, généalogie | ✅ |
 | 7 | Rencontres entre joueurs | ✅ |
-| 8 | Fin de vie | |
+| 8 | Fin de vie | ✅ |
 | 9 | Finitions : application installable, musiques et sons | |
 
 ## Dessiner pour le jeu

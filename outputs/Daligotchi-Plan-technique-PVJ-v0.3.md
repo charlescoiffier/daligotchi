@@ -160,11 +160,13 @@ daligotchi/
 - Les stades (jeune, adulte, vieux) se déduisent de l'âge biologique. La longévité héritée (plus tard) n'allonge ou ne raccourcit que la vieillesse.
 - Exemple vérifié par le simulateur : une absence de 10 jours retarde la fin de vie de 4 jours.
 
-### 5.3 Mort de vieillesse
+### 5.3 Fin de vie (`lifecycle.ts`)
 
-- Au stade vieux, après un âge donné, l'animal entre dans une phase de **signes de grand âge** pendant plusieurs jours de jeu.
-- À la fin de cette phase, la mort devient possible, mais elle est **déclenchée uniquement par le serveur pendant une session** d'un responsable, et jamais pendant la première session suivant une absence.
-- Le décès est un événement enregistré une seule fois ; il déclenche la scène d'adieu chez chaque responsable à sa prochaine visite.
+- **Signes de grand âge** les trois derniers jours de la vie.
+- **Derniers moments** : au terme de sa vie, l'animal y entre à la première visite (jamais pendant une absence ni dès la reconnexion) ; il dort presque tout le temps et sa fiche le dit.
+- **Adieu** : il ne s'endort pour toujours qu'à une visite au moins 6 heures de jeu plus tard (`endOfLifeStep`), en présence d'un responsable. Scène d'adieu (il s'efface, une étoile monte) puis message.
+- **Confort** : pendant la vieillesse, chaque visite où il est heureux prolonge sa vie de 2 heures, jusqu'à 3 jours (`comfortAfterVisit`).
+- **Mémoire** : parti, il libère sa place, quitte le lieu de rencontre (ses invitations expirent) et reste dans la généalogie, marqué « parti ».
 
 ### 5.4 Génétique d'espèce
 
@@ -404,7 +406,7 @@ Chaque étape se termine par quelque chose de jouable ou de vérifiable par la f
 | **5. Mise en ligne de test** | Déploiement sur le VPS en vitesse accélérée, sauvegardes | La famille joue depuis ses téléphones | ✅ fait |
 | **6. Relations** | Interaction et amour au foyer, ponte, nid, attribution, dépôt après 7 jours, généalogie | Premiers bébés et premier arbre | ✅ fait |
 | **7. Rencontres** | Amis, invitations, lieu de rencontre, scène courte, souvenir, phrases prédéfinies | Rencontres entre joueurs | ✅ fait |
-| **8. Fin de vie** | Grand âge, vieillissement ralenti, scène d'adieu | Cycle de vie complet | |
+| **8. Fin de vie** | Grand âge, vieillissement ralenti, derniers moments, confort, scène d'adieu | Cycle de vie complet | ✅ fait |
 | **9. Finitions PVJ** | PWA installable, musiques et effets sonores, réglages d'équilibrage, production à vitesse ×1 | Ouverture aux amis | |
 
 ## 13. Points techniques à décider

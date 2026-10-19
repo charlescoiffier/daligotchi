@@ -1,4 +1,4 @@
-import { DAY, WEEK } from './clock.ts';
+import { DAY, HOUR, WEEK } from './clock.ts';
 import type { Species } from './genetics.ts';
 
 /**
@@ -62,6 +62,18 @@ export const BALANCE = {
     oldDuration: 4 * WEEK,
     /** Durée des signes de grand âge avant la fin de vie. */
     elderSignsDuration: 3 * DAY,
+  },
+
+  /**
+   * Fin de vie (GDD §4). Arrivé au terme de sa vie, l'animal vit ses « derniers moments » à la
+   * visite suivante, et ne s'endort pour toujours qu'à une visite ultérieure, au moins
+   * `farewellDelay` plus tard : jamais pendant une absence, jamais dès la reconnexion.
+   * Pendant la vieillesse, chaque visite où il est heureux prolonge un peu sa vie.
+   */
+  endOfLife: {
+    farewellDelay: 6 * HOUR,
+    comfortPerHappyVisit: 2 * HOUR,
+    maxComfort: 3 * DAY,
   },
 
   /** Vieillissement ralenti après une longue absence. */

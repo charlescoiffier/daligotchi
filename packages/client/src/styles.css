@@ -676,3 +676,22 @@ body {
   padding: 10px;
   font-size: 1rem;
 }
+
+.tree__animal--deceased {
+  color: var(--muted);
+}
+
+.farewell {
+  text-align: center;
+}
+
+.farewell h2 {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+}
+
+.farewell p {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  color: var(--text);
+}

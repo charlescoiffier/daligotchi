@@ -85,6 +85,7 @@ export function AnimalCard({ animal, busy, onAction, onRename, onSaveStory, onGe
       </header>
       {description.elderSigns && <p class="card__elder">{t('elder.signs')}</p>}
       {animal.visitingHost && <p class="card__elder">{t('visiting', { host: animal.visitingHost })}</p>}
+      {animal.lastMoments && <p class="card__elder">{t('elder.lastMoments')}</p>}
       <ul class="card__needs" aria-label={t('card.needs')}>
         {ANIMAL_NEEDS.map((need) => {
           const key = description.needs[need];

@@ -11,6 +11,8 @@ export interface FamilyTree {
   story: string;
   /** Fondateur : sans ascendants connus. */
   founder: boolean;
+  /** Parti : il s'est endormi pour toujours, mais reste dans l'arbre (GDD §7). */
+  deceased: boolean;
   parents: FamilyTree[];
 }
 
@@ -38,6 +40,7 @@ export async function familyTree({ db }: Database, animalId: string, depth = MAX
     form: row.form,
     story: row.description,
     founder: parentIds.length === 0,
+    deceased: row.diedAt !== null,
     parents,
   };
 }

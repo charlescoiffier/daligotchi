@@ -18,6 +18,7 @@ import { ActionsPanel } from './ActionsPanel.tsx';
 import { AdoptionPanel } from './AdoptionPanel.tsx';
 import { AnimalCard } from './AnimalCard.tsx';
 import { EggCard } from './EggCard.tsx';
+import { FarewellPanel } from './FarewellPanel.tsx';
 import { GenealogyPanel, type GenealogyTarget } from './GenealogyPanel.tsx';
 import { MeetingOverlay } from './MeetingOverlay.tsx';
 import { MeetingsPanel } from './MeetingsPanel.tsx';
@@ -47,6 +48,8 @@ export function HouseholdScreen({ player, onLogout }: HouseholdScreenProps) {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [genealogy, setGenealogy] = useState<GenealogyTarget | null>(null);
+  /** Adieux à montrer, un par un, après la scène. */
+  const [farewells, setFarewells] = useState<string[]>([]);
   const [meetings, setMeetings] = useState<Meetings | null>(null);
   const [friends, setFriends] = useState<Friends | null>(null);
   /** Scène de rencontre en cours (jouée ou revue en souvenir). */
@@ -73,6 +76,11 @@ export function HouseholdScreen({ player, onLogout }: HouseholdScreenProps) {
           ? t('clutch.laidOne', { parents })
           : t('clutch.laidMany', { parents, count: clutch.eggCount }),
       );
+    }
+    if (data.farewells.length > 0) {
+      // Laisser le temps à la scène d'adieu (l'étoile qui monte) avant le message.
+      const names = data.farewells.map((f) => f.name);
+      setTimeout(() => setFarewells((list) => [...list, ...names]), 4500);
     }
     for (const hatching of data.hatched) {
       const form = t(`form.${hatching.form}` as MessageKey).toLowerCase();
@@ -324,6 +332,7 @@ export function HouseholdScreen({ player, onLogout }: HouseholdScreenProps) {
       {empty && !panel && <p class="notice">{t('household.empty')}</p>}
 
       <footer class="bottom-bar">
+        {farewells[0] && <FarewellPanel name={farewells[0]} onClose={() => setFarewells((list) => list.slice(1))} />}
         {scene && (
           <MeetingOverlay
             key={scene.meeting.id}

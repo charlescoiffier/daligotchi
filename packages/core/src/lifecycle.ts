@@ -44,3 +44,36 @@ export function agingDuring(fromMs: number, toMs: number, lastVisitAtMs: number)
   const slow = Math.max(0, toMs - Math.max(fromMs, slowFrom));
   return normal + slow * slowAgingFactor;
 }
+
+/**
+ * Confort de la vieillesse : une visite où l'animal vieux est heureux prolonge un peu sa vie
+ * (GDD §4 : « les soins préservent le confort et peuvent prolonger légèrement la vie »).
+ * Renvoie le nouveau bonus de confort, plafonné.
+ */
+export function comfortAfterVisit(stage: Stage, happy: boolean, comfortMs: number): number {
+  const { comfortPerHappyVisit, maxComfort } = BALANCE.endOfLife;
+  if (stage !== 'old' || !happy) return comfortMs;
+  return Math.min(maxComfort, comfortMs + comfortPerHappyVisit);
+}
+
+/**
+ * Étape de fin de vie à un instant donné. Au terme de sa vie, l'animal entre dans ses derniers
+ * moments à la première visite ; il ne s'endort pour toujours qu'à une visite au moins
+ * `farewellDelay` plus tard. Sans visite (tâche de fond), rien ne se passe.
+ */
+export function endOfLifeStep(input: {
+  ageMs: number;
+  lifespanMs: number;
+  lastMomentsSince: number | null;
+  visit: boolean;
+  now: number;
+}): { lastMomentsSince: number | null; dies: boolean } {
+  if (!isLifeOver(input.ageMs, input.lifespanMs)) return { lastMomentsSince: null, dies: false };
+  if (!input.visit) return { lastMomentsSince: input.lastMomentsSince, dies: false };
+  if (input.lastMomentsSince === null) return { lastMomentsSince: input.now, dies: false };
+  return {
+    lastMomentsSince: input.lastMomentsSince,
+    dies: input.now - input.lastMomentsSince >= BALANCE.endOfLife.farewellDelay,
+  };
+}
+

@@ -35,6 +35,8 @@ export interface HouseholdAnimal {
   bonds: { animalId: string; name: string; level: BondLevel }[];
   /** En visite chez ce joueur, le temps d'une scène de rencontre. */
   visitingHost?: string;
+  /** Arrivé au terme de sa vie : il vit ses derniers moments. */
+  lastMoments: boolean;
 }
 
 /** Animal d'un autre joueur, tel qu'on le voit (sans besoins ni allèles). */
@@ -93,6 +95,7 @@ export interface FamilyTree {
   form: Form;
   story: string;
   founder: boolean;
+  deceased: boolean;
   parents: FamilyTree[];
 }
 
@@ -120,6 +123,8 @@ export interface Household {
   hatched: Hatching[];
   /** Pontes pas encore annoncées. */
   newClutches: { parents: string[]; eggCount: number }[];
+  /** Animaux partis pendant cette visite (scène d'adieu). */
+  farewells: { animalId: string; name: string; form: Form; stage: Stage }[];
 }
 
 export interface AdoptionEgg {

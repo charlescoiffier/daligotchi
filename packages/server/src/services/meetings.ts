@@ -205,7 +205,9 @@ async function applyEffects(
 ): Promise<MeetingOutcome> {
   const [inviterAnimal] = await tx.select().from(animals).where(eq(animals.id, row.inviterAnimalId));
   const [inviteeAnimal] = await tx.select().from(animals).where(eq(animals.id, row.inviteeAnimalId));
-  if (!inviterAnimal || !inviteeAnimal) return { level: 'none', eggCount: 0 };
+  if (!inviterAnimal || !inviteeAnimal || inviterAnimal.diedAt !== null || inviteeAnimal.diedAt !== null) {
+    return { level: 'none', eggCount: 0 };
+  }
 
   // Les deux foyers sont verrouillés dans un ordre fixe (pas d'interblocage), puis mis à jour.
   const householdIds = [...new Set([inviterAnimal.householdId, inviteeAnimal.householdId])].sort();

@@ -7,6 +7,7 @@ import { EggActor } from './EggActor.ts';
 import { drawGround, startClouds } from './decor.ts';
 import { FOOD_BOWL, HABITAT_HEIGHT, HABITAT_WIDTH, NEST, SLOT_POSITIONS, WALK_AREA, WATER_BOWL } from './layout.ts';
 import { registerDrawings } from './pixelArt.ts';
+import { spriteKeyFor } from './sprites.ts';
 
 export { HABITAT_HEIGHT, HABITAT_WIDTH } from './layout.ts';
 export const HOUSEHOLD_KEY = 'household';
@@ -93,6 +94,19 @@ export class HabitatScene extends Phaser.Scene {
       });
     }
 
+    // Adieux : l'animal s'efface doucement avant de quitter l'habitat.
+    for (const farewell of household.farewells) {
+      const actor = this.actors.get(farewell.animalId);
+      if (actor) {
+        this.actors.delete(farewell.animalId);
+        actor.farewell(() => {});
+      } else {
+        // Adieu dès l'ouverture du jeu : l'animal n'était pas encore dessiné, on le montre une dernière
+        // fois, au centre, sans cacher les autres.
+        this.playFarewell(farewell, [HABITAT_WIDTH / 2, 150]);
+      }
+    }
+
     const animalIds = new Set(household.animals.map((animal) => animal.id));
     for (const [id, actor] of this.actors) {
       if (!animalIds.has(id)) {
@@ -135,6 +149,22 @@ export class HabitatScene extends Phaser.Scene {
     const nestCount = household.nest.length;
     this.nest?.setVisible(nestCount > 0);
     if (nestCount > 0) this.nest?.setTexture(`nest${Math.min(3, nestCount)}`);
+  }
+
+  /** Scène d'adieu pour un animal qui n'est plus dans l'habitat : il s'efface, une étoile monte. */
+  private playFarewell(farewell: Household['farewells'][number], [x, y]: readonly [number, number]) {
+    const sprite = this.add.image(x, y, spriteKeyFor(this, farewell.form, farewell.stage)).setOrigin(0.5, 1).setDepth(y);
+    const star = this.add.image(x, y - sprite.height, 'star').setDepth(1000).setAlpha(0);
+    this.tweens.add({ targets: sprite, alpha: 0, duration: 2500, delay: 1200, onComplete: () => sprite.destroy() });
+    this.tweens.chain({
+      targets: star,
+      tweens: [
+        { alpha: 1, duration: 800, delay: 1800 },
+        { y: 20, duration: 4000, ease: 'Sine.InOut' },
+        { alpha: 0, duration: 800 },
+      ],
+      onComplete: () => star.destroy(),
+    });
   }
 
   private addAnimal(animal: HouseholdAnimal, home: readonly [number, number]) {

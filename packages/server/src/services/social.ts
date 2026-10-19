@@ -1,5 +1,5 @@
 import { type Form, type Stage, stageOf } from '@daligotchi/core';
-import { and, eq, inArray, ne, or } from 'drizzle-orm';
+import { and, eq, inArray, isNull, ne, or } from 'drizzle-orm';
 import type { Database } from '../db/client.ts';
 import { animals, friendships, households, meetingListings, players } from '../db/schema.ts';
 import { findPlayerByPseudo } from './players.ts';
@@ -93,11 +93,12 @@ export async function listFriends({ db }: Database, me: string) {
 }
 
 async function publicAnimals({ db }: Database, where: ReturnType<typeof eq>) {
+  // Les animaux partis restent dans la généalogie, mais ne sont plus visibles ni invitables.
   const rows = await db
     .select({ id: animals.id, name: animals.name, form: animals.form, ageMs: animals.ageMs })
     .from(animals)
     .innerJoin(households, eq(households.id, animals.householdId))
-    .where(where);
+    .where(and(where, isNull(animals.diedAt)));
   return rows.map(({ ageMs, ...animal }): PublicAnimal => ({ ...animal, stage: stageOf(ageMs) }));
 }
 
@@ -113,7 +114,7 @@ export async function ownerOf({ db }: Database, animalId: string): Promise<strin
     .select({ playerId: households.playerId })
     .from(animals)
     .innerJoin(households, eq(households.id, animals.householdId))
-    .where(eq(animals.id, animalId));
+    .where(and(eq(animals.id, animalId), isNull(animals.diedAt)));
   return row?.playerId;
 }
 

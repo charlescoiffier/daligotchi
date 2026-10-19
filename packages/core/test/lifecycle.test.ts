@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { DAY, WEEK } from '../src/clock.ts';
+import { DAY, HOUR, WEEK } from '../src/clock.ts';
 import {
   agingDuring,
+  comfortAfterVisit,
+  endOfLifeStep,
   hasElderSigns,
   isLifeOver,
   lifespanOf,
@@ -65,5 +67,40 @@ describe('agingDuring (vieillissement ralenti en absence)', () => {
 
   it('ne revient jamais en arrière', () => {
     expect(agingDuring(5 * DAY, DAY, 0)).toBe(0);
+  });
+});
+
+describe('comfortAfterVisit', () => {
+  it('un vieil animal heureux gagne un peu de vie à chaque visite, jusqu’à trois jours', () => {
+    expect(comfortAfterVisit('old', true, 0)).toBe(2 * HOUR);
+    expect(comfortAfterVisit('old', true, 3 * DAY - HOUR)).toBe(3 * DAY);
+  });
+
+  it('rien pour un adulte, ni pour un vieil animal malheureux', () => {
+    expect(comfortAfterVisit('adult', true, 0)).toBe(0);
+    expect(comfortAfterVisit('old', false, HOUR)).toBe(HOUR);
+  });
+});
+
+describe('endOfLifeStep', () => {
+  const end = { ageMs: LIFESPAN, lifespanMs: LIFESPAN };
+
+  it('avant le terme, rien', () => {
+    expect(endOfLifeStep({ ageMs: LIFESPAN - 1, lifespanMs: LIFESPAN, lastMomentsSince: null, visit: true, now: 0 })).toEqual({
+      lastMomentsSince: null,
+      dies: false,
+    });
+  });
+
+  it('jamais sans visite : la tâche de fond ne fait rien', () => {
+    expect(endOfLifeStep({ ...end, lastMomentsSince: null, visit: false, now: 0 }).dies).toBe(false);
+    expect(endOfLifeStep({ ...end, lastMomentsSince: 0, visit: false, now: DAY }).dies).toBe(false);
+  });
+
+  it('la première visite ouvre les derniers moments, l’adieu vient au moins six heures plus tard', () => {
+    const first = endOfLifeStep({ ...end, lastMomentsSince: null, visit: true, now: 10 * DAY });
+    expect(first).toEqual({ lastMomentsSince: 10 * DAY, dies: false });
+    expect(endOfLifeStep({ ...end, lastMomentsSince: 10 * DAY, visit: true, now: 10 * DAY + 5 * HOUR }).dies).toBe(false);
+    expect(endOfLifeStep({ ...end, lastMomentsSince: 10 * DAY, visit: true, now: 10 * DAY + 6 * HOUR }).dies).toBe(true);
   });
 });

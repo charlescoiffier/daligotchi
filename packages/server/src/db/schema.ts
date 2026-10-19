@@ -89,6 +89,12 @@ export const animals = pgTable(
     description: text('description').notNull().default(''),
     /** Dernière ponte, tous partenaires confondus (récupération de deux semaines). */
     lastClutchAt: worldTime('last_clutch_at'),
+    /** Bonus de vie gagné par le confort pendant la vieillesse (GDD §4). */
+    comfortMs: doublePrecision('comfort_ms').notNull().default(0),
+    /** Début des derniers moments (fin de vie atteinte, constatée pendant une visite). */
+    lastMomentsSince: worldTime('last_moments_since'),
+    /** Départ : l'animal quitte le foyer mais reste dans la généalogie. */
+    diedAt: worldTime('died_at'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('animals_household_idx').on(table.householdId)],
