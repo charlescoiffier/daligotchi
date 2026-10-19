@@ -259,11 +259,11 @@ Recommandation : intégrer le son lors des finitions de la PVJ, ou plus tôt si 
 |---|---|
 | Dessin et animation des animaux | **Piskel** (gratuit, dans le navigateur) |
 | Musiques d’ambiance | **BeepBox** (gratuit, dans le navigateur) |
-| Effets sonores | **Enregistrements directs** (voix, bruits du quotidien), retravaillés ensuite |
+| Effets sonores | **Enregistrements directs** (voix, bruits du quotidien), retravaillés avec **Audacity** (gratuit) |
 
 Les sons ou images éventuellement récupérés ailleurs doivent être libres de droits (licence CC0) ; les images d’inspiration trouvées sur le Web ne sont pas intégrées au jeu.
 
-La résolution de l’habitat, la taille définitive des sprites, la palette des animaux, les animations prioritaires, l’outil de retouche des enregistrements et la liste des musiques et effets restent à définir.
+La résolution de l’habitat, la taille définitive des sprites, la palette des animaux, les animations prioritaires et la liste des musiques et effets restent à définir.
 
 ## 14. Première version jouable (PVJ)
 
@@ -325,6 +325,6 @@ Le dépôt d’un œuf au lieu d’adoption autorise-t-il définitivement son ad
 
 ## Historique
 
-- **v0.3 — 19 octobre 2026** : section « Graphisme et son » : décor en pixel art gris léger sur fond blanc (sol tramé avec imperfections, nuages), musique d’ambiance et effets sonores, outils de création (Piskel, BeepBox, enregistrements directs).
+- **v0.3 — 19 octobre 2026** : section « Graphisme et son » : décor en pixel art gris léger sur fond blanc (sol tramé avec imperfections, nuages), musique d’ambiance et effets sonores, outils de création (Piskel, BeepBox, enregistrements directs retravaillés avec Audacity).
 - **v0.2 — 19 octobre 2026** : intégration des réponses à la relecture : public, comptes, langue, rythme de deux visites, vieillissement ralenti en absence, mort de vieillesse avec adieu dans la PVJ, lavage simple, jauge d’interaction et exclusivité de l’amour, ponte entre joueurs, dépôt automatique après sept jours, œufs du jeu à allèles aléatoires, rencontres en scène courte, lieu de rencontre par inscription, textes libres, pas de notifications, architecture retenue (option C).
 - **v0.1 — 19 octobre 2026** : première version (conservée dans `Daligotchi-GDD-v0.1.md`).

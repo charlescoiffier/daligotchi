@@ -1,10 +1,2 @@
-import fr from './fr.json';
-
-export type MessageKey = keyof typeof fr;
-
-/** Renvoie le texte français d'une clé, en remplaçant les {paramètres}. */
-export function t(key: MessageKey, params: Record<string, string | number> = {}): string {
-  return fr[key].replace(/\{(\w+)\}/g, (match, name: string) =>
-    name in params ? String(params[name]) : match,
-  );
-}
+// Les textes vivent dans @daligotchi/core, partagés avec le serveur et le simulateur.
+export { type MessageKey, t } from '@daligotchi/core';

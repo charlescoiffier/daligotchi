@@ -1,0 +1,50 @@
+{
+  "app.title": "Dalígotchi",
+  "server.checking": "Connexion…",
+  "server.ok": "Serveur prêt",
+  "server.down": "Serveur injoignable",
+  "server.worldSpeed": "Temps ×{speed}",
+  "actions.button": "Actions",
+  "actions.soon": "Bientôt disponible",
+
+  "species.renard": "Renard",
+  "species.poulpe": "Poulpe",
+  "species.poulpard": "Poulpard",
+
+  "stage.young": "jeune",
+  "stage.adult": "adulte",
+  "stage.old": "vieux",
+
+  "emotion.happy": "heureux",
+  "emotion.calm": "tranquille",
+  "emotion.sad": "triste",
+
+  "need.satiety.good": "rassasié",
+  "need.satiety.low": "a faim",
+  "need.satiety.bad": "très faim",
+  "need.hydration.good": "désaltéré",
+  "need.hydration.low": "a soif",
+  "need.hydration.bad": "très soif",
+  "need.energy.good": "en forme",
+  "need.energy.low": "fatigué",
+  "need.energy.bad": "épuisé",
+  "need.hygiene.good": "propre",
+  "need.hygiene.low": "sale",
+  "need.hygiene.bad": "très sale",
+  "need.fun.good": "s’amuse",
+  "need.fun.low": "s’ennuie",
+  "need.fun.bad": "s’ennuie beaucoup",
+  "need.affection.good": "se sent aimé",
+  "need.affection.low": "réclame des câlins",
+  "need.affection.bad": "se sent seul",
+  "need.home.good": "habitat propre",
+  "need.home.low": "habitat sale",
+  "need.home.bad": "habitat très sale",
+
+  "elder.signs": "montre des signes de grand âge",
+
+  "event.adult": "devient adulte",
+  "event.old": "devient vieux",
+  "event.elderSigns": "montre des signes de grand âge",
+  "event.lifeOver": "arrive au bout de sa vie"
+}

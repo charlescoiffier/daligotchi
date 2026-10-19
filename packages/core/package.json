@@ -8,6 +8,10 @@
   },
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "simulate": "tsx sim/cli.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15"
   }
 }

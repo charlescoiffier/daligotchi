@@ -1,12 +1,12 @@
 # Dalígotchi
 
-Jeu familial d'animaux de compagnie en pixel art. Le design est décrit dans `outputs/Daligotchi-GDD-v0.3.md` et l'architecture dans `outputs/Daligotchi-Plan-technique-PVJ-v0.1.md`.
+Jeu familial d'animaux de compagnie en pixel art. Le design est décrit dans `outputs/Daligotchi-GDD-v0.3.md` et l'architecture dans `outputs/Daligotchi-Plan-technique-PVJ-v0.2.md`.
 
 ## Organisation
 
 | Dossier | Contenu |
 |---|---|
-| `packages/core` | Règles du jeu partagées (génétique, temps, équilibrage), sans réseau ni base |
+| `packages/core` | Règles du jeu partagées (besoins, cycle de vie, génétique, textes, simulateur), sans réseau ni base |
 | `packages/server` | API Fastify + PostgreSQL (Drizzle) |
 | `packages/client` | Jeu web : Phaser (habitat) + Preact (menus) |
 | `deploy` | Docker Compose, Caddy et configuration pour le VPS |
@@ -49,6 +49,7 @@ Le jeu s'ouvre sur http://localhost:5173 et l'API répond sur http://localhost:3
 |---|---|
 | `pnpm test` | Tous les tests (core, serveur, client) |
 | `pnpm typecheck` | Vérification des types |
+| `pnpm simulate` | Fait vivre un animal toute sa vie en une seconde (options : `--visites 0\|1\|2`, `--jours`, `--absence 40:10`, `--longevite 1.1`, `--detail`) |
 | `pnpm build` | Compile le jeu et le serveur |
 | `pnpm db:generate` | Crée une migration après une modification de `packages/server/src/db/schema.ts` |
 | `pnpm db:migrate` | Applique les migrations |
@@ -58,7 +59,7 @@ Le jeu s'ouvre sur http://localhost:5173 et l'API répond sur http://localhost:3
 
 - `WORLD_SPEED` dans `.env` : `1` correspond au temps réel, `24` à une journée de jeu par heure.
 - Les nombres d'équilibrage sont dans `packages/core/src/balance.ts`.
-- Les textes du jeu sont dans `packages/client/src/i18n/fr.json`.
+- Les textes du jeu sont dans `packages/core/src/i18n/fr.json`.
 
 ## Déploiement (VPS)
 
